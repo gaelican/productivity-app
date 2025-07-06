@@ -1,0 +1,12 @@
+rootProject.name = 'ProductivityApp'
+
+// Minimal EAS-compatible configuration
+// This uses file() method which is more reliable in EAS builds
+
+apply from: file("../node_modules/expo/scripts/autolinking.gradle")
+useExpoModules()
+
+apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle")
+applyNativeModulesSettingsGradle(settings)
+
+include ':app'

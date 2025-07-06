@@ -33,7 +33,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.productivityapp.app",
+      "package": "com.productivityapp",
       "permissions": [],
       "intentFilters": [
         {

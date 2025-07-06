@@ -6,7 +6,9 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "eas-build-pre-install": "echo 'Pre-install hook for EAS Build'",
+    "eas-build-post-install": "echo 'Post-install hook for EAS Build'"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.6",
@@ -36,7 +38,8 @@
     "react-native-screens": "^3.29.0",
     "react-native-web": "~0.19.6",
     "react-redux": "^9.0.4",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "metro-react-native-babel-preset": "0.77.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

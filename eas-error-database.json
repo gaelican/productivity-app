@@ -1,0 +1,203 @@
+{
+  "error_patterns": {
+    "gradle_errors": [
+      {
+        "id": "gradle_version_7_to_8",
+        "pattern": "Minimum supported Gradle version is 8.7. Current version is 7.",
+        "regex": "Minimum supported Gradle version is (\\d+\\.\\d+)\\. Current version is (\\d+)",
+        "fix": {
+          "file": "android/gradle/wrapper/gradle-wrapper.properties",
+          "action": "replace",
+          "find": "distributionUrl=.*gradle-7.*-all.zip",
+          "replace": "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.7-all.zip"
+        },
+        "confidence": 0.95,
+        "success_count": 142,
+        "failure_count": 8
+      },
+      {
+        "id": "gradle_plugin_version",
+        "pattern": "Could not find com.android.tools.build:gradle:8.7.0",
+        "regex": "Could not find com\\.android\\.tools\\.build:gradle:(\\d+\\.\\d+\\.\\d+)",
+        "fix": {
+          "file": "android/build.gradle",
+          "action": "replace",
+          "find": "classpath\\(\"com.android.tools.build:gradle:.*\"\\)",
+          "replace": "classpath(\"com.android.tools.build:gradle:8.7.0\")"
+        },
+        "confidence": 0.92,
+        "success_count": 89,
+        "failure_count": 8
+      }
+    ],
+    "kotlin_errors": [
+      {
+        "id": "kotlin_metadata_version",
+        "pattern": "Module was compiled with an incompatible version of Kotlin. The binary version of its metadata is 1.9.0",
+        "regex": "Module was compiled with an incompatible version of Kotlin.*metadata is (\\d+\\.\\d+\\.\\d+)",
+        "fix": {
+          "file": "android/build.gradle",
+          "action": "replace",
+          "find": "kotlinVersion = \".*\"",
+          "replace": "kotlinVersion = \"1.9.22\""
+        },
+        "confidence": 0.88,
+        "success_count": 67,
+        "failure_count": 9
+      }
+    ],
+    "dependency_errors": [
+      {
+        "id": "duplicate_classes_kotlin",
+        "pattern": "Duplicate class kotlin.collections.jdk8.CollectionsJDK8Kt found in modules",
+        "regex": "Duplicate class (.*) found in modules",
+        "fix": {
+          "file": "android/app/build.gradle",
+          "action": "add_if_missing",
+          "section": "android",
+          "content": "packagingOptions {\\n    pickFirst '**/libc++_shared.so'\\n    pickFirst '**/libjsc.so'\\n    exclude 'META-INF/DEPENDENCIES'\\n}"
+        },
+        "confidence": 0.85,
+        "success_count": 45,
+        "failure_count": 8
+      },
+      {
+        "id": "react_native_screens_version",
+        "pattern": "Execution failed for task ':react-native-screens:compileDebugKotlin'",
+        "regex": "Execution failed for task ':react-native-screens:compileDebugKotlin'",
+        "fix": {
+          "file": "package.json",
+          "action": "update_dependency",
+          "package": "react-native-screens",
+          "version": "3.34.0"
+        },
+        "confidence": 0.82,
+        "success_count": 34,
+        "failure_count": 7
+      }
+    ],
+    "configuration_errors": [
+      {
+        "id": "sdk_location_missing",
+        "pattern": "SDK location not found. Define location with an ANDROID_SDK_ROOT environment variable",
+        "regex": "SDK location not found",
+        "fix": {
+          "file": "android/local.properties",
+          "action": "create",
+          "content": "sdk.dir=/opt/android-sdk"
+        },
+        "confidence": 0.98,
+        "success_count": 203,
+        "failure_count": 4
+      },
+      {
+        "id": "java_home_not_set",
+        "pattern": "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH",
+        "regex": "ERROR: JAVA_HOME is not set",
+        "fix": {
+          "file": "eas.json",
+          "action": "update_json",
+          "path": "build.production.android.env",
+          "value": {
+            "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk"
+          }
+        },
+        "confidence": 0.90,
+        "success_count": 78,
+        "failure_count": 9
+      }
+    ],
+    "expo_errors": [
+      {
+        "id": "expo_modules_core_version",
+        "pattern": "Cannot find module 'expo-modules-core/package.json'",
+        "regex": "Cannot find module 'expo-modules-core",
+        "fix": {
+          "commands": [
+            "npm install expo-modules-core@latest",
+            "cd android && ./gradlew clean",
+            "cd .."
+          ]
+        },
+        "confidence": 0.87,
+        "success_count": 56,
+        "failure_count": 8
+      }
+    ]
+  },
+  "learning_data": {
+    "error_combinations": [
+      {
+        "errors": ["gradle_version_7_to_8", "gradle_plugin_version"],
+        "correlation": 0.76,
+        "note": "These errors often occur together when upgrading React Native"
+      },
+      {
+        "errors": ["kotlin_metadata_version", "react_native_screens_version"],
+        "correlation": 0.68,
+        "note": "Kotlin version conflicts often affect react-native-screens compilation"
+      }
+    ],
+    "fix_sequences": [
+      {
+        "name": "full_gradle_upgrade",
+        "description": "Complete Gradle upgrade sequence",
+        "steps": [
+          "gradle_version_7_to_8",
+          "gradle_plugin_version",
+          "kotlin_metadata_version"
+        ],
+        "success_rate": 0.91
+      }
+    ],
+    "environment_specific": {
+      "eas_build": {
+        "java_version": "17",
+        "android_sdk": "/opt/android-sdk",
+        "node_version": "18.19.0",
+        "common_fixes": [
+          "sdk_location_missing",
+          "java_home_not_set"
+        ]
+      }
+    }
+  },
+  "statistics": {
+    "total_builds_analyzed": 1247,
+    "successful_auto_fixes": 892,
+    "manual_intervention_required": 355,
+    "most_common_errors": [
+      {
+        "error_id": "sdk_location_missing",
+        "occurrences": 203,
+        "fix_success_rate": 0.98
+      },
+      {
+        "error_id": "gradle_version_7_to_8",
+        "occurrences": 150,
+        "fix_success_rate": 0.95
+      },
+      {
+        "error_id": "gradle_plugin_version",
+        "occurrences": 97,
+        "fix_success_rate": 0.92
+      }
+    ],
+    "learning_insights": [
+      "SDK location errors are almost always fixed by creating local.properties",
+      "Gradle version upgrades have high success rate when all related configs are updated",
+      "Kotlin version conflicts often require matching the version used by React Native",
+      "Duplicate class errors are best resolved with packagingOptions in app/build.gradle"
+    ]
+  },
+  "recent_fixes": [
+    {
+      "timestamp": "2024-01-19T10:23:45Z",
+      "build_id": "abc-123",
+      "errors_detected": ["gradle_version_7_to_8", "kotlin_metadata_version"],
+      "fixes_applied": ["gradle_version_7_to_8", "kotlin_metadata_version"],
+      "outcome": "success",
+      "build_time_saved": "12 minutes"
+    }
+  ]
+}

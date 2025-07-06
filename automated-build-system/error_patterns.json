@@ -1,0 +1,250 @@
+{
+  "error_patterns": [
+    {
+      "id": "gradle_plugin_version",
+      "pattern": "Could not find com\\.facebook\\.react:react-native-gradle-plugin:(\\d+\\.\\d+\\.\\d+)",
+      "description": "React Native Gradle plugin version mismatch",
+      "severity": "high",
+      "fix_strategy": "version_alignment",
+      "fix_details": {
+        "files": ["android/build.gradle", "package.json"],
+        "action": "align_versions"
+      }
+    },
+    {
+      "id": "autolinking_missing",
+      "pattern": "Could not read script.*node_modules.*autolinking\\.gradle.*does not exist",
+      "description": "Missing autolinking.gradle in EAS environment",
+      "severity": "high",
+      "fix_strategy": "simplify_settings",
+      "fix_details": {
+        "files": ["android/settings.gradle"],
+        "action": "create_minimal"
+      }
+    },
+    {
+      "id": "plugin_management_order",
+      "pattern": "The pluginManagement \\{\\} block must appear before any other statements",
+      "description": "Gradle pluginManagement block position error",
+      "severity": "medium",
+      "fix_strategy": "reorder_blocks",
+      "fix_details": {
+        "files": ["android/settings.gradle"],
+        "action": "move_to_top"
+      }
+    },
+    {
+      "id": "missing_repositories",
+      "pattern": "Could not resolve all dependencies for configuration.*classpath",
+      "description": "Missing or incorrect repository configuration",
+      "severity": "high",
+      "fix_strategy": "add_repositories",
+      "fix_details": {
+        "repositories": [
+          "maven { url \"https://www.jitpack.io\" }",
+          "maven { url \"https://maven.google.com\" }",
+          "maven { url \"https://repo1.maven.org/maven2\" }"
+        ]
+      }
+    },
+    {
+      "id": "namespace_missing",
+      "pattern": "Namespace not specified.*Please specify a namespace",
+      "description": "Missing namespace in build.gradle",
+      "severity": "high",
+      "fix_strategy": "add_namespace",
+      "fix_details": {
+        "namespace": "com.productivityapp",
+        "file": "android/app/build.gradle"
+      }
+    },
+    {
+      "id": "package_mismatch",
+      "pattern": "Package name mismatch|applicationId.*does not match",
+      "description": "Package name inconsistency across files",
+      "severity": "high",
+      "fix_strategy": "unify_package_name",
+      "fix_details": {
+        "package": "com.productivityapp",
+        "files": ["app.json", "android/app/build.gradle", "android/app/src/main/AndroidManifest.xml"]
+      }
+    },
+    {
+      "id": "gradle_wrapper_version",
+      "pattern": "gradle-(\\d+\\.\\d+)-all\\.zip.*not found|Minimum supported Gradle version",
+      "description": "Gradle wrapper version issue",
+      "severity": "medium",
+      "fix_strategy": "set_gradle_version",
+      "fix_details": {
+        "version": "8.6",
+        "file": "android/gradle/wrapper/gradle-wrapper.properties"
+      }
+    },
+    {
+      "id": "expo_autolinking",
+      "pattern": "expo-modules-autolinking.*not found|Cannot find module.*expo.*autolinking",
+      "description": "Expo modules autolinking issue",
+      "severity": "high",
+      "fix_strategy": "fix_expo_config",
+      "fix_details": {
+        "create_config": true,
+        "simplify_gradle": true
+      }
+    },
+    {
+      "id": "kotlin_version",
+      "pattern": "kotlinVersion.*is not defined|Could not get unknown property 'kotlinVersion'",
+      "description": "Kotlin version not defined",
+      "severity": "medium",
+      "fix_strategy": "define_kotlin_version",
+      "fix_details": {
+        "version": "1.8.10",
+        "file": "android/build.gradle"
+      }
+    },
+    {
+      "id": "build_tools_version",
+      "pattern": "buildToolsVersion.*not found|Failed to find Build Tools",
+      "description": "Build tools version issue",
+      "severity": "medium",
+      "fix_strategy": "set_build_tools",
+      "fix_details": {
+        "version": "34.0.0",
+        "file": "android/app/build.gradle"
+      }
+    },
+    {
+      "id": "sdk_version_mismatch",
+      "pattern": "compileSdkVersion.*is not compatible|targetSdkVersion.*must be",
+      "description": "SDK version compatibility issue",
+      "severity": "high",
+      "fix_strategy": "align_sdk_versions",
+      "fix_details": {
+        "compileSdkVersion": 34,
+        "targetSdkVersion": 34,
+        "minSdkVersion": 23
+      }
+    },
+    {
+      "id": "duplicate_resources",
+      "pattern": "Duplicate resources|Resource entry.*is already defined",
+      "description": "Duplicate resource definitions",
+      "severity": "medium",
+      "fix_strategy": "clean_resources",
+      "fix_details": {
+        "clean_build": true,
+        "remove_duplicates": true
+      }
+    },
+    {
+      "id": "manifest_merger_failed",
+      "pattern": "Manifest merger failed|Attribute.*at AndroidManifest",
+      "description": "Android manifest merger conflicts",
+      "severity": "high",
+      "fix_strategy": "fix_manifest",
+      "fix_details": {
+        "add_tools_namespace": true,
+        "resolve_conflicts": true
+      }
+    },
+    {
+      "id": "metro_bundler_error",
+      "pattern": "Metro.*error|Unable to resolve module|bundling failed",
+      "description": "Metro bundler error during build",
+      "severity": "high",
+      "fix_strategy": "fix_metro_config",
+      "fix_details": {
+        "reset_cache": true,
+        "fix_imports": true
+      }
+    },
+    {
+      "id": "signing_config",
+      "pattern": "signingConfig.*release.*not found|Keystore file.*does not exist",
+      "description": "Release signing configuration issue",
+      "severity": "low",
+      "fix_strategy": "use_debug_signing",
+      "fix_details": {
+        "comment_out_release": true,
+        "use_debug": true
+      }
+    },
+    {
+      "id": "memory_heap_space",
+      "pattern": "Java heap space|OutOfMemoryError|GC overhead limit exceeded",
+      "description": "Gradle out of memory error",
+      "severity": "medium",
+      "fix_strategy": "increase_memory",
+      "fix_details": {
+        "heap_size": "4096m",
+        "file": "android/gradle.properties"
+      }
+    },
+    {
+      "id": "dex_method_limit",
+      "pattern": "Cannot fit requested classes in a single dex file|method ID not in",
+      "description": "DEX method count limit exceeded",
+      "severity": "high",
+      "fix_strategy": "enable_multidex",
+      "fix_details": {
+        "enable": true,
+        "file": "android/app/build.gradle"
+      }
+    },
+    {
+      "id": "react_native_screens",
+      "pattern": "react-native-screens.*package does not exist|enableScreens.*cannot find symbol",
+      "description": "React Native Screens configuration issue",
+      "severity": "medium",
+      "fix_strategy": "fix_screens_import",
+      "fix_details": {
+        "update_imports": true,
+        "check_dependencies": true
+      }
+    },
+    {
+      "id": "workspace_dependencies",
+      "pattern": "workspace:.*could not be resolved|npm workspace.*not supported",
+      "description": "Monorepo workspace dependencies issue",
+      "severity": "high",
+      "fix_strategy": "resolve_workspaces",
+      "fix_details": {
+        "flatten_dependencies": true,
+        "remove_workspace_protocol": true
+      }
+    },
+    {
+      "id": "native_modules_linking",
+      "pattern": "Native module.*cannot be null|RN.*PackageList.*cannot find symbol",
+      "description": "Native modules linking error",
+      "severity": "high",
+      "fix_strategy": "regenerate_native_code",
+      "fix_details": {
+        "clean_generated": true,
+        "run_codegen": true
+      }
+    }
+  ],
+  "fix_priorities": {
+    "high": ["gradle_plugin_version", "autolinking_missing", "namespace_missing", "package_mismatch"],
+    "medium": ["plugin_management_order", "kotlin_version", "build_tools_version"],
+    "low": ["signing_config"]
+  },
+  "fix_sequences": [
+    {
+      "name": "initial_setup",
+      "description": "Basic setup fixes to apply first",
+      "fixes": ["gradle_plugin_version", "gradle_wrapper_version", "namespace_missing"]
+    },
+    {
+      "name": "dependency_resolution",
+      "description": "Fix dependency and repository issues",
+      "fixes": ["missing_repositories", "workspace_dependencies", "expo_autolinking"]
+    },
+    {
+      "name": "build_configuration",
+      "description": "Fix build configuration issues",
+      "fixes": ["sdk_version_mismatch", "kotlin_version", "build_tools_version"]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+Failed to read the app config from the project using "npx expo config" command: npx expo config --json exited with non-zero code: 1.
+Falling back to the version of "@expo/config" shipped with the EAS CLI.
+- Fetching the build…
+✔ Found a matching build for the project @gaelican/productivity-app
+
+ID            15d4147a-2db6-4d0d-bc80-3ce83812240f
+Platform      Android
+Status        errored
+Profile       preview
+Distribution  internal
+Version       1.0
+Version code  1
+Commit        105cc01364ad43a6a92ce91b4d4f20dd28069847
+Logs          https://expo.dev/accounts/gaelican/projects/productivity-app/builds/15d4147a-2db6-4d0d-bc80-3ce83812240f
+Started at    7/6/2025, 4:39:28 PM
+Finished at   7/6/2025, 4:40:27 PM
+Started by    gaelican

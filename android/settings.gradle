@@ -1,13 +1,12 @@
 rootProject.name = 'ProductivityApp'
-
-// Use direct relative paths - most reliable for EAS builds
-apply from: file("../node_modules/expo/scripts/autolinking.gradle")
-useExpoModules()
-
-apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle")
-applyNativeModulesSettingsGradle(settings)
-
 include ':app'
-
-// Include gradle plugin for React Native 0.73+
 includeBuild('../node_modules/@react-native/gradle-plugin')
+
+// Apply scripts after project evaluation
+gradle.projectsEvaluated {
+    apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle")
+    useExpoModules()
+    
+    apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json')"].execute(null, rootDir).text.trim(), "../native_modules.gradle")
+    applyNativeModulesSettingsGradle(settings)
+}

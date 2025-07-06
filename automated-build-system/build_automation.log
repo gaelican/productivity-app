@@ -1,0 +1,33 @@
+2025-07-06 16:33:05,256 - INFO - Starting automated build process
+2025-07-06 16:33:05,256 - INFO - Build attempt 1/5
+2025-07-06 16:33:05,256 - INFO - Starting EAS build...
+2025-07-06 16:33:05,256 - INFO - Running command: eas build -p android --profile preview --non-interactive --json
+2025-07-06 16:33:19,310 - INFO - Starting automated build process
+2025-07-06 16:33:31,768 - INFO - Build attempt 1/5
+2025-07-06 16:33:42,708 - INFO - Starting EAS build...
+2025-07-06 16:33:42,708 - INFO - Running command: eas build -p android --profile preview --non-interactive --json
+2025-07-06 16:36:59,020 - ERROR - Failed to start build: Failed to read the app config from the project using "npx expo config" command: npx expo config --json exited with non-zero code: 1.
+Falling back to the version of "@expo/config" shipped with the EAS CLI.
+Resolved "preview" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "preview" environment on EAS.
+
+Specified value for "android.package" in app.json is ignored because an android directory was detected in the project.
+EAS Build will use the value found in the native code.
+✔ Using remote Android credentials (Expo server)
+✔ Using Keystore from configuration: Build Credentials yDQN8K-zeM (default)
+
+Compressing project files and uploading to EAS Build. Learn more: https://expo.fyi/eas-build-archive
+- Compressing project files
+- Uploading to EAS Build (0 / 16.8 MB)
+✔ Uploaded to EAS 13s
+
+See logs: https://expo.dev/accounts/gaelican/projects/productivity-app/builds/137edad9-c028-4a2d-a78d-65cd2b76c47d
+
+Waiting for build to complete. You can press Ctrl+C to exit.
+- Waiting for build to complete.
+✖ Build failed
+
+2025-07-06 16:37:37,762 - ERROR - Failed to start build
+2025-07-06 16:38:37,765 - INFO - Build attempt 2/5
+2025-07-06 16:38:48,560 - INFO - Starting EAS build...
+2025-07-06 16:38:48,560 - INFO - Running command: eas build -p android --profile preview --non-interactive --json
