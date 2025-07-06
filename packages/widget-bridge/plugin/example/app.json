@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Todo App with Widget",
+    "slug": "todo-app-widget",
+    "version": "1.0.0",
+    "platforms": ["android"],
+    "android": {
+      "package": "com.todoapp.widget"
+    },
+    "plugins": [
+      [
+        "@todo-app/widget-bridge/plugin",
+        {
+          "widgetName": "TodoWidget",
+          "updateInterval": 30
+        }
+      ]
+    ]
+  }
+}

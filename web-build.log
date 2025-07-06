@@ -1,0 +1,13 @@
+Starting project at /home/gaelican/new-folder/apps/mobile
+Starting Metro Bundler
+Waiting on http://localhost:8085
+Logs for your project will appear below.
+Error: ENOENT: no such file or directory, watch '/home/gaelican/new-folder/apps/mobile/dist/assets/__node_modules/.pnpm/@react-navigation+elements@1.3.31_@react-navigation+native@6.1.18_react-native-safe-area-cont_zptcbyjv5amp7yphlsnkkgbhva/node_modules/@react-navigation'
+    at FSWatcher.<computed> (node:internal/fs/watchers:247:19)
+    at Object.watch (node:fs:2491:36)
+    at NodeWatcher._watchdir (/home/gaelican/new-folder/node_modules/.pnpm/metro-file-map@0.80.12/node_modules/metro-file-map/src/watchers/NodeWatcher.js:89:24)
+    at /home/gaelican/new-folder/node_modules/.pnpm/metro-file-map@0.80.12/node_modules/metro-file-map/src/watchers/NodeWatcher.js:26:14
+    at Walker.<anonymous> (/home/gaelican/new-folder/node_modules/.pnpm/metro-file-map@0.80.12/node_modules/metro-file-map/src/watchers/common.js:81:31)
+    at Walker.emit (node:events:524:28)
+    at /home/gaelican/new-folder/node_modules/.pnpm/walker@1.0.8/node_modules/walker/lib/walker.js:69:16
+    at FSReqCallback.oncomplete (node:fs:188:23)

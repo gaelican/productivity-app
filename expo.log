@@ -1,0 +1,8 @@
+Starting project at /home/gaelican/new-folder/apps/mobile
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web Bundled 3778ms index.ts (615 modules)
+Web Bundled 55ms index.ts (1 module)
+Web Bundled 42ms index.ts (1 module)

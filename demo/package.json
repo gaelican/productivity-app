@@ -1,0 +1,19 @@
+{
+  "name": "@productivity-app/demo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "terminal": "tsx terminal-ui/interactive-demo.ts",
+    "test-visual": "tsx visual-tests/run-tests.ts"
+  },
+  "dependencies": {
+    "boxen": "^7.1.1",
+    "chalk": "^5.3.0",
+    "inquirer": "^9.2.12",
+    "ora": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "tsx": "^4.6.2"
+  }
+}

@@ -1,0 +1,9 @@
+# Ignore workspace references
+../../packages
+../../apps/widgets
+../../node_modules
+../.pnpm-store
+../../pnpm-lock.yaml
+../../pnpm-workspace.yaml
+../../package.json
+../../turbo.json

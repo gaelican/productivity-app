@@ -1,0 +1,1 @@
+export { gradientThemes, GradientThemeManager, type GradientTheme } from './GradientThemes';

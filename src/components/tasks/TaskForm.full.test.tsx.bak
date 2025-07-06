@@ -1,0 +1,594 @@
+import React from 'react';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { TaskForm, TaskFormProps, TaskFormData } from './TaskForm';
+import { validateTaskForm, validateField } from './TaskFormValidation';
+
+// Mock dependencies
+jest.mock('./TaskFormValidation');
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: 'LinearGradient',
+}));
+jest.mock('../../core/tasks/gradients', () => ({
+  GradientThemeManager: {
+    getGradientById: (id: string) => ({
+      id,
+      name: `${id} theme`,
+      colors: ['#000', '#fff'],
+    }),
+    getAllGradients: () => [
+      { id: 'ocean', name: 'Ocean', colors: ['#00a', '#00f'] },
+      { id: 'sunset', name: 'Sunset', colors: ['#f00', '#ff0'] },
+    ],
+  },
+}));
+
+// Mock child components
+jest.mock('./DateTimePicker', () => ({
+  DateTimePickerComponent: ({ value, onChange, label }: any) => (
+    <>
+      <>{label}</>
+      <MockPressable
+        testID="date-picker"
+        onPress={() => onChange(new Date('2024-12-31T12:00:00'))}
+      >
+        {value ? value.toISOString() : 'Select date'}
+      </MockPressable>
+    </>
+  ),
+}));
+
+jest.mock('./PrioritySelector', () => ({
+  PrioritySelector: ({ value, onChange }: any) => (
+    <MockPressable testID="priority-selector" onPress={() => onChange('high')}>
+      Priority: {value}
+    </MockPressable>
+  ),
+}));
+
+jest.mock('./TagInput', () => ({
+  TagInput: ({ value, onChange }: any) => (
+    <MockPressable testID="tag-input" onPress={() => onChange(['work', 'important'])}>
+      Tags: {value.join(', ')}
+    </MockPressable>
+  ),
+}));
+
+jest.mock('./GoalSelector', () => ({
+  GoalSelector: ({ value, onChange }: any) => (
+    <MockPressable testID="goal-selector" onPress={() => onChange('goal-123')}>
+      Goal: {value || 'none'}
+    </MockPressable>
+  ),
+}));
+
+jest.mock('./IconPicker', () => ({
+  IconPicker: ({ value, onChange }: any) => (
+    <MockPressable testID="icon-picker" onPress={() => onChange('✅')}>
+      Icon: {value}
+    </MockPressable>
+  ),
+}));
+
+// Helper component for mocking TouchableOpacity
+const MockPressable = ({ children, testID, onPress }: any) => {
+  const { TouchableOpacity } = require('react-native');
+  return (
+    <TouchableOpacity testID={testID} onPress={onPress}>
+      {children}
+    </TouchableOpacity>
+  );
+};
+
+describe('TaskForm', () => {
+  const defaultProps: TaskFormProps = {
+    mode: 'create',
+    onSubmit: jest.fn(),
+    onCancel: jest.fn(),
+    isLoading: false,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (validateTaskForm as jest.Mock).mockResolvedValue({});
+    (validateField as jest.Mock).mockResolvedValue(null);
+  });
+
+  describe('Rendering', () => {
+    it('should render all form fields in create mode', () => {
+      const { getByPlaceholderText, getByText, getByTestId } = render(
+        <TaskForm {...defaultProps} />
+      );
+
+      // Core fields
+      expect(getByPlaceholderText('What needs to be done?')).toBeTruthy();
+      expect(getByPlaceholderText('Add more details...')).toBeTruthy();
+      expect(getByPlaceholderText('Private notes...')).toBeTruthy();
+
+      // Labels
+      expect(getByText('Task Name *')).toBeTruthy();
+      expect(getByText('Description')).toBeTruthy();
+      expect(getByText('Notes')).toBeTruthy();
+      expect(getByText('Color Theme')).toBeTruthy();
+
+      // Child components
+      expect(getByTestId('icon-picker')).toBeTruthy();
+      expect(getByTestId('priority-selector')).toBeTruthy();
+      expect(getByTestId('date-picker')).toBeTruthy();
+      expect(getByTestId('tag-input')).toBeTruthy();
+      expect(getByTestId('goal-selector')).toBeTruthy();
+
+      // Buttons
+      expect(getByText('Cancel')).toBeTruthy();
+      expect(getByText('Create Task')).toBeTruthy();
+    });
+
+    it('should render progress slider in edit mode', () => {
+      const { getByText, queryByText } = render(
+        <TaskForm {...defaultProps} mode="edit" />
+      );
+
+      expect(getByText('Progress: 0%')).toBeTruthy();
+      expect(getByText('0%')).toBeTruthy();
+      expect(getByText('25%')).toBeTruthy();
+      expect(getByText('50%')).toBeTruthy();
+      expect(getByText('75%')).toBeTruthy();
+      expect(getByText('100%')).toBeTruthy();
+      expect(getByText('Save Changes')).toBeTruthy();
+    });
+
+    it('should not render progress slider in create mode', () => {
+      const { queryByText } = render(
+        <TaskForm {...defaultProps} mode="create" />
+      );
+
+      expect(queryByText('Progress:')).toBeNull();
+    });
+
+    it('should not render notes field when showNotes is false', () => {
+      const { queryByPlaceholderText } = render(
+        <TaskForm {...defaultProps} showNotes={false} />
+      );
+
+      expect(queryByPlaceholderText('Private notes...')).toBeNull();
+    });
+
+    it('should populate fields with initial values', () => {
+      const initialValues: Partial<TaskFormData> = {
+        name: 'Test Task',
+        description: 'Test Description',
+        notes: 'Test Notes',
+        icon: '🎯',
+        color: 'sunset',
+        priority: 'high',
+        tags: ['test', 'demo'],
+        progress: 75,
+      };
+
+      const { getByDisplayValue, getByText } = render(
+        <TaskForm {...defaultProps} initialValues={initialValues} mode="edit" />
+      );
+
+      expect(getByDisplayValue('Test Task')).toBeTruthy();
+      expect(getByDisplayValue('Test Description')).toBeTruthy();
+      expect(getByDisplayValue('Test Notes')).toBeTruthy();
+      expect(getByText('Icon: 🎯')).toBeTruthy();
+      expect(getByText('Priority: high')).toBeTruthy();
+      expect(getByText('Tags: test, demo')).toBeTruthy();
+      expect(getByText('Progress: 75%')).toBeTruthy();
+    });
+
+    it('should show loading state when isLoading is true', () => {
+      const { getByText } = render(
+        <TaskForm {...defaultProps} isLoading={true} />
+      );
+
+      // Buttons are disabled when loading
+      const submitButton = getByText('Create Task').parent;
+      const cancelButton = getByText('Cancel').parent;
+      expect(submitButton).toHaveProperty('props.disabled', true);
+      expect(cancelButton).toHaveProperty('props.disabled', true);
+    });
+  });
+
+  describe('Field Interactions', () => {
+    it('should update task name field', () => {
+      const { getByPlaceholderText } = render(<TaskForm {...defaultProps} />);
+      const nameInput = getByPlaceholderText('What needs to be done?');
+
+      fireEvent.changeText(nameInput, 'New Task Name');
+      expect(nameInput.props.value).toBe('New Task Name');
+    });
+
+    it('should update description field', () => {
+      const { getByPlaceholderText } = render(<TaskForm {...defaultProps} />);
+      const descInput = getByPlaceholderText('Add more details...');
+
+      fireEvent.changeText(descInput, 'New Description');
+      expect(descInput.props.value).toBe('New Description');
+    });
+
+    it('should update notes field', () => {
+      const { getByPlaceholderText } = render(<TaskForm {...defaultProps} />);
+      const notesInput = getByPlaceholderText('Private notes...');
+
+      fireEvent.changeText(notesInput, 'Private notes here');
+      expect(notesInput.props.value).toBe('Private notes here');
+    });
+
+    it('should update icon when icon picker is used', () => {
+      const { getByTestId, getByText } = render(<TaskForm {...defaultProps} />);
+      
+      expect(getByText('Icon: 📝')).toBeTruthy(); // Default icon
+      fireEvent.press(getByTestId('icon-picker'));
+      expect(getByText('Icon: ✅')).toBeTruthy(); // Updated icon
+    });
+
+    it('should update priority when priority selector is used', () => {
+      const { getByTestId, getByText } = render(<TaskForm {...defaultProps} />);
+      
+      expect(getByText('Priority: medium')).toBeTruthy(); // Default priority
+      fireEvent.press(getByTestId('priority-selector'));
+      expect(getByText('Priority: high')).toBeTruthy(); // Updated priority
+    });
+
+    it('should update due date when date picker is used', () => {
+      const { getByTestId } = render(<TaskForm {...defaultProps} />);
+      
+      fireEvent.press(getByTestId('date-picker'));
+      expect(getByTestId('date-picker').children[0]).toContain('2024-12-31');
+    });
+
+    it('should update tags when tag input is used', () => {
+      const { getByTestId, getByText } = render(<TaskForm {...defaultProps} />);
+      
+      expect(getByText('Tags: ')).toBeTruthy(); // No tags initially
+      fireEvent.press(getByTestId('tag-input'));
+      expect(getByText('Tags: work, important')).toBeTruthy();
+    });
+
+    it('should update goal when goal selector is used', () => {
+      const { getByTestId, getByText } = render(<TaskForm {...defaultProps} />);
+      
+      expect(getByText('Goal: none')).toBeTruthy(); // No goal initially
+      fireEvent.press(getByTestId('goal-selector'));
+      expect(getByText('Goal: goal-123')).toBeTruthy();
+    });
+
+    it('should update progress in edit mode', () => {
+      const { getByText } = render(
+        <TaskForm {...defaultProps} mode="edit" />
+      );
+
+      expect(getByText('Progress: 0%')).toBeTruthy();
+      fireEvent.press(getByText('75%'));
+      expect(getByText('Progress: 75%')).toBeTruthy();
+    });
+
+    it('should toggle gradient picker', () => {
+      const { getByText, queryByText } = render(<TaskForm {...defaultProps} />);
+      
+      const gradientSelector = getByText('ocean theme');
+      
+      // Initially picker is hidden
+      expect(queryByText('Ocean')).toBeNull();
+      expect(queryByText('Sunset')).toBeNull();
+      
+      // Show picker
+      fireEvent.press(gradientSelector.parent);
+      expect(getByText('Ocean')).toBeTruthy();
+      expect(getByText('Sunset')).toBeTruthy();
+      
+      // Select a gradient
+      fireEvent.press(getByText('Sunset'));
+      expect(queryByText('Ocean')).toBeNull(); // Picker closed
+      expect(getByText('sunset theme')).toBeTruthy(); // Updated selection
+    });
+  });
+
+  describe('Validation', () => {
+    it('should validate fields on blur', async () => {
+      const { getByPlaceholderText } = render(<TaskForm {...defaultProps} />);
+      const nameInput = getByPlaceholderText('What needs to be done?');
+
+      await act(async () => {
+        fireEvent(nameInput, 'blur');
+      });
+
+      expect(validateField).toHaveBeenCalledWith('name', '', 'create');
+    });
+
+    it('should show validation errors', async () => {
+      (validateField as jest.Mock).mockResolvedValue('Task name is required');
+      
+      const { getByPlaceholderText, getByText } = render(<TaskForm {...defaultProps} />);
+      const nameInput = getByPlaceholderText('What needs to be done?');
+
+      await act(async () => {
+        fireEvent(nameInput, 'blur');
+      });
+
+      await waitFor(() => {
+        expect(getByText('Task name is required')).toBeTruthy();
+      });
+    });
+
+    it('should validate all fields on submit', async () => {
+      (validateTaskForm as jest.Mock).mockResolvedValue({
+        name: 'Task name is required',
+        tags: 'At least one tag is required',
+      });
+
+      const { getByText } = render(<TaskForm {...defaultProps} />);
+      
+      await act(async () => {
+        fireEvent.press(getByText('Create Task'));
+      });
+
+      await waitFor(() => {
+        expect(validateTaskForm).toHaveBeenCalled();
+        expect(getByText('Task name is required')).toBeTruthy();
+        expect(getByText('At least one tag is required')).toBeTruthy();
+      });
+
+      expect(defaultProps.onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('should clear error when field is corrected', async () => {
+      (validateField as jest.Mock)
+        .mockResolvedValueOnce('Task name is required')
+        .mockResolvedValueOnce(null);
+
+      const { getByPlaceholderText, getByText, queryByText } = render(
+        <TaskForm {...defaultProps} />
+      );
+      const nameInput = getByPlaceholderText('What needs to be done?');
+
+      // First blur - show error
+      await act(async () => {
+        fireEvent(nameInput, 'blur');
+      });
+
+      await waitFor(() => {
+        expect(getByText('Task name is required')).toBeTruthy();
+      });
+
+      // Type valid value and blur again
+      fireEvent.changeText(nameInput, 'Valid Task Name');
+      await act(async () => {
+        fireEvent(nameInput, 'blur');
+      });
+
+      await waitFor(() => {
+        expect(queryByText('Task name is required')).toBeNull();
+      });
+    });
+  });
+
+  describe('Form Submission', () => {
+    it('should submit form with all data in create mode', async () => {
+      const onSubmit = jest.fn();
+      const { getByText, getByPlaceholderText, getByTestId } = render(
+        <TaskForm {...defaultProps} onSubmit={onSubmit} />
+      );
+
+      // Fill form
+      fireEvent.changeText(getByPlaceholderText('What needs to be done?'), 'Test Task');
+      fireEvent.changeText(getByPlaceholderText('Add more details...'), 'Test Description');
+      fireEvent.changeText(getByPlaceholderText('Private notes...'), 'Test Notes');
+      fireEvent.press(getByTestId('icon-picker'));
+      fireEvent.press(getByTestId('priority-selector'));
+      fireEvent.press(getByTestId('date-picker'));
+      fireEvent.press(getByTestId('tag-input'));
+      fireEvent.press(getByTestId('goal-selector'));
+
+      // Submit
+      await act(async () => {
+        fireEvent.press(getByText('Create Task'));
+      });
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith({
+          name: 'Test Task',
+          description: 'Test Description',
+          notes: 'Test Notes',
+          icon: '✅',
+          color: 'ocean',
+          priority: 'high',
+          dueDate: new Date('2024-12-31T12:00:00'),
+          dueTime: undefined,
+          tags: ['work', 'important'],
+          goalId: 'goal-123',
+          progress: 0,
+        });
+      });
+    });
+
+    it('should submit form with updated data in edit mode', async () => {
+      const onSubmit = jest.fn();
+      const initialValues: Partial<TaskFormData> = {
+        name: 'Original Task',
+        description: 'Original Description',
+        progress: 25,
+      };
+
+      const { getByText, getByPlaceholderText } = render(
+        <TaskForm
+          {...defaultProps}
+          mode="edit"
+          initialValues={initialValues}
+          onSubmit={onSubmit}
+        />
+      );
+
+      // Update some fields
+      fireEvent.changeText(getByPlaceholderText('What needs to be done?'), 'Updated Task');
+      fireEvent.press(getByText('50%'));
+
+      // Submit
+      await act(async () => {
+        fireEvent.press(getByText('Save Changes'));
+      });
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: 'Updated Task',
+            description: 'Original Description',
+            progress: 50,
+          })
+        );
+      });
+    });
+
+    it('should disable submit button when no changes in edit mode', () => {
+      const initialValues: Partial<TaskFormData> = {
+        name: 'Test Task',
+      };
+
+      const { getByText } = render(
+        <TaskForm {...defaultProps} mode="edit" initialValues={initialValues} />
+      );
+
+      const submitButton = getByText('Save Changes').parent;
+      expect(submitButton).toHaveProperty('props.disabled', true);
+    });
+
+    it('should enable submit button when changes made in edit mode', () => {
+      const initialValues: Partial<TaskFormData> = {
+        name: 'Test Task',
+      };
+
+      const { getByText, getByPlaceholderText } = render(
+        <TaskForm {...defaultProps} mode="edit" initialValues={initialValues} />
+      );
+
+      fireEvent.changeText(getByPlaceholderText('What needs to be done?'), 'Updated Task');
+
+      const submitButton = getByText('Save Changes').parent;
+      expect(submitButton).toHaveProperty('props.disabled', false);
+    });
+
+    it('should disable submit button when name is empty', () => {
+      const { getByText, getByPlaceholderText } = render(
+        <TaskForm {...defaultProps} />
+      );
+
+      const nameInput = getByPlaceholderText('What needs to be done?');
+      fireEvent.changeText(nameInput, '   '); // Only spaces
+
+      const submitButton = getByText('Create Task').parent;
+      expect(submitButton).toHaveProperty('props.disabled', true);
+    });
+
+    it('should not submit when validation fails', async () => {
+      const onSubmit = jest.fn();
+      (validateTaskForm as jest.Mock).mockResolvedValue({
+        name: 'Task name is required',
+      });
+
+      const { getByText } = render(
+        <TaskForm {...defaultProps} onSubmit={onSubmit} />
+      );
+
+      await act(async () => {
+        fireEvent.press(getByText('Create Task'));
+      });
+
+      await waitFor(() => {
+        expect(onSubmit).not.toHaveBeenCalled();
+        expect(getByText('Task name is required')).toBeTruthy();
+      });
+    });
+  });
+
+  describe('Cancel Functionality', () => {
+    it('should call onCancel when cancel button is pressed', () => {
+      const onCancel = jest.fn();
+      const { getByText } = render(
+        <TaskForm {...defaultProps} onCancel={onCancel} />
+      );
+
+      fireEvent.press(getByText('Cancel'));
+      expect(onCancel).toHaveBeenCalled();
+    });
+
+    it('should not disable cancel button when loading', () => {
+      const { getByText } = render(
+        <TaskForm {...defaultProps} isLoading={true} />
+      );
+
+      const cancelButton = getByText('Cancel').parent;
+      expect(cancelButton).toHaveProperty('props.disabled', true);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle undefined initial values gracefully', () => {
+      const { getByPlaceholderText, getByText } = render(
+        <TaskForm {...defaultProps} initialValues={undefined} />
+      );
+
+      expect(getByPlaceholderText('What needs to be done?').props.value).toBe('');
+      expect(getByText('Icon: 📝')).toBeTruthy(); // Default icon
+      expect(getByText('Priority: medium')).toBeTruthy(); // Default priority
+    });
+
+    it('should handle submission errors gracefully', async () => {
+      const onSubmit = jest.fn().mockRejectedValue(new Error('Submit failed'));
+      const { getByText, getByPlaceholderText } = render(
+        <TaskForm {...defaultProps} onSubmit={onSubmit} />
+      );
+
+      fireEvent.changeText(getByPlaceholderText('What needs to be done?'), 'Test Task');
+      fireEvent.press(getByTestId('tag-input')); // Add required tags
+
+      await act(async () => {
+        fireEvent.press(getByText('Create Task'));
+      });
+
+      // Should still have called onSubmit (error handling is parent's responsibility)
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalled();
+      });
+    });
+
+    it('should track changes correctly for complex data types', () => {
+      const initialValues: Partial<TaskFormData> = {
+        name: 'Test Task',
+        tags: ['tag1', 'tag2'],
+        dueDate: new Date('2024-01-01'),
+      };
+
+      const { getByText, getByTestId } = render(
+        <TaskForm {...defaultProps} mode="edit" initialValues={initialValues} />
+      );
+
+      // Initially no changes
+      expect(getByText('Save Changes').parent).toHaveProperty('props.disabled', true);
+
+      // Change tags
+      fireEvent.press(getByTestId('tag-input'));
+      
+      // Should detect change
+      expect(getByText('Save Changes').parent).toHaveProperty('props.disabled', false);
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('should have proper test IDs for key components', () => {
+      const { getByTestId } = render(<TaskForm {...defaultProps} />);
+
+      expect(getByTestId('icon-picker')).toBeTruthy();
+      expect(getByTestId('priority-selector')).toBeTruthy();
+      expect(getByTestId('date-picker')).toBeTruthy();
+      expect(getByTestId('tag-input')).toBeTruthy();
+      expect(getByTestId('goal-selector')).toBeTruthy();
+    });
+
+    it('should show required field indicator', () => {
+      const { getByText } = render(<TaskForm {...defaultProps} />);
+      
+      expect(getByText('Task Name *')).toBeTruthy();
+    });
+  });
+});

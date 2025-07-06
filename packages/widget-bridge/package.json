@@ -1,0 +1,60 @@
+{
+  "name": "@productivity/widget-bridge",
+  "version": "1.0.0",
+  "description": "React Native bridge for native widget communication",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "react-native": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "files": [
+    "dist",
+    "src",
+    "android",
+    "ios",
+    "plugin"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./plugin": "./plugin/src/index.js"
+  },
+  "dependencies": {
+    "react-native": "*"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "@expo/config-plugins": "^10.1.1",
+    "@types/jest": "^29.0.0",
+    "@types/react": "*",
+    "@types/react-native": "*",
+    "jest": "^29.0.0",
+    "react-native-builder-bob": "^0.20.0",
+    "typescript": "^5.0.0"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "dist",
+    "targets": [
+      "commonjs",
+      "module",
+      "typescript"
+    ]
+  },
+  "author": "",
+  "license": "MIT",
+  "keywords": [
+    "react-native",
+    "widget",
+    "android",
+    "ios",
+    "native-module"
+  ]
+}

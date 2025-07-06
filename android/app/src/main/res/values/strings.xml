@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Productivity App</string>
+    <string name="widget_description">Display and manage your tasks from the home screen</string>
+</resources>
