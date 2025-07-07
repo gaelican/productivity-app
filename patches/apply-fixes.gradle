@@ -1,72 +1,35 @@
+// Apply fixes for React Native Android build issues
 
-// Android Build Fixes for React Native 0.73.6
-// Add this to android/app/build.gradle or create a separate .gradle file
-
-// Function to add namespace if missing
-def addNamespaceIfMissing(projectPath, namespace) {
-    def buildFile = file("$rootDir/../node_modules/$projectPath/android/build.gradle")
-    if (buildFile.exists()) {
-        def content = buildFile.text
-        if (!content.contains('namespace')) {
-            def newContent = content.replaceFirst(
-                /android\s*\{/,
-                "android {\n    namespace \"$namespace\""
-            )
-            buildFile.text = newContent
-            println "Added namespace to $projectPath"
+// Fix for AsyncStorage and other modules that might have naming issues
+gradle.projectsEvaluated {
+    rootProject.allprojects { project ->
+        if (project.name.contains('react-native-async-storage_async-storage')) {
+            // Skip this incorrectly named project
+            project.tasks.all { task ->
+                task.enabled = false
+            }
         }
     }
 }
 
-// Function to enable BuildConfig if missing
-def enableBuildConfigIfMissing(projectPath) {
-    def buildFile = file("$rootDir/../node_modules/$projectPath/android/build.gradle")
-    if (buildFile.exists()) {
-        def content = buildFile.text
-        if (!content.contains('buildFeatures') || !content.contains('buildConfig')) {
-            def newContent = content.replaceFirst(
-                /(android\s*\{[^}]*)/,
-                '$1\n    buildFeatures {\n        buildConfig = true\n    }'
-            )
-            buildFile.text = newContent
-            println "Enabled BuildConfig for $projectPath"
-        }
-    }
-}
-
-// Apply fixes before build
-preBuild.doFirst {
-    // Add namespaces
-    addNamespaceIfMissing('expo-modules-core', 'expo.modules')
-    addNamespaceIfMissing('expo-constants', 'expo.modules.constants')
-    addNamespaceIfMissing('expo-file-system', 'expo.modules.filesystem')
-    addNamespaceIfMissing('expo-font', 'expo.modules.font')
-    addNamespaceIfMissing('expo-keep-awake', 'expo.modules.keepawake')
-    addNamespaceIfMissing('expo-splash-screen', 'expo.modules.splashscreen')
-    addNamespaceIfMissing('@nozbe/watermelondb', 'com.nozbe.watermelondb')
-    addNamespaceIfMissing('@react-native-community/datetimepicker', 'com.reactcommunity.rndatetimepicker')
-    addNamespaceIfMissing('@react-native-async-storage/async-storage', 'com.reactnativecommunity.asyncstorage')
-    addNamespaceIfMissing('@react-native-community/netinfo', 'com.reactnativecommunity.netinfo')
-    addNamespaceIfMissing('react-native-gesture-handler', 'com.swmansion.gesturehandler')
-    addNamespaceIfMissing('react-native-reanimated', 'com.swmansion.reanimated')
-    addNamespaceIfMissing('react-native-screens', 'com.swmansion.rnscreens')
-    addNamespaceIfMissing('react-native-safe-area-context', 'com.th3rdwave.safeareacontext')
-    addNamespaceIfMissing('react-native-svg', 'com.horcrux.svg')
-    
-    // Enable BuildConfig
-    enableBuildConfigIfMissing('@react-native-community/datetimepicker')
-    enableBuildConfigIfMissing('react-native-gesture-handler')
-    enableBuildConfigIfMissing('react-native-reanimated')
-}
-
-// Alternative: Apply fixes after dependencies are extracted
-afterEvaluate {
-    tasks.findAll { task ->
-        task.name.startsWith('generate') && task.name.endsWith('Sources')
-    }.each { task ->
-        task.doFirst {
-            println "Applying Android build fixes..."
-            // Apply the same fixes here
+// Add build configuration fixes
+allprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            android {
+                // Suppress compile SDK warnings
+                if (!project.hasProperty('android.suppressUnsupportedCompileSdk')) {
+                    project.ext['android.suppressUnsupportedCompileSdk'] = '34'
+                }
+                
+                // Ensure buildConfig is enabled where needed
+                if (project.name.contains('datetimepicker') || 
+                    project.name.contains('async-storage')) {
+                    buildFeatures {
+                        buildConfig true
+                    }
+                }
+            }
         }
     }
 }
