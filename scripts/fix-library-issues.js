@@ -52,5 +52,62 @@ if (fs.existsSync(datetimepickerBuildGradle)) {
   }
 }
 
+// Fix AsyncStorage autolinking issue
+const asyncStoragePath = path.join(
+  __dirname,
+  '../node_modules/@react-native-async-storage/async-storage/android'
+);
+
+if (fs.existsSync(asyncStoragePath)) {
+  // Create a local.properties file to help with module resolution
+  const localPropertiesPath = path.join(asyncStoragePath, 'local.properties');
+  if (!fs.existsSync(localPropertiesPath)) {
+    fs.writeFileSync(localPropertiesPath, 'sdk.dir=/usr/local/lib/android/sdk\n');
+    console.log('✅ Created local.properties for AsyncStorage');
+  }
+  
+  // Check if build.gradle exists and has proper configuration
+  const asyncStorageBuildGradle = path.join(asyncStoragePath, 'build.gradle');
+  if (fs.existsSync(asyncStorageBuildGradle)) {
+    let content = fs.readFileSync(asyncStorageBuildGradle, 'utf8');
+    
+    // Ensure namespace is set
+    if (!content.includes('namespace ')) {
+      content = content.replace(
+        /android\s*{/,
+        'android {\n    namespace "com.reactnativecommunity.asyncstorage"'
+      );
+      fs.writeFileSync(asyncStorageBuildGradle, content);
+      console.log('✅ Fixed AsyncStorage namespace');
+    }
+  }
+}
+
+// Fix react-native.config.js to exclude problematic modules
+const rnConfigPath = path.join(__dirname, '../react-native.config.js');
+if (fs.existsSync(rnConfigPath)) {
+  const newConfig = `module.exports = {
+  project: {
+    android: {
+      sourceDir: './android',
+    },
+  },
+  dependencies: {
+    // Fix AsyncStorage autolinking
+    '@react-native-async-storage/async-storage': {
+      platforms: {
+        android: {
+          sourceDir: '../node_modules/@react-native-async-storage/async-storage/android',
+          packageImportPath: 'import com.reactnativecommunity.asyncstorage.AsyncStoragePackage;',
+        },
+      },
+    },
+  },
+};
+`;
+  fs.writeFileSync(rnConfigPath, newConfig);
+  console.log('✅ Updated react-native.config.js');
+}
+
 // Add more library fixes as needed
 console.log('✅ Library fixes completed');
