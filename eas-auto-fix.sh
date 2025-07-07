@@ -153,7 +153,7 @@ monitor_and_fix() {
         echo_info "Starting build attempt $attempt/$MAX_RETRY_ATTEMPTS"
         
         # Start EAS build
-        build_output=$(eas build --platform android --json 2>&1) || {
+        build_output=$(eas build --platform android --profile preview --json --non-interactive 2>&1) || {
             echo_error "Failed to start build"
             echo "$build_output"
             
