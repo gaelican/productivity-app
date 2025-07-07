@@ -1,2 +1,39 @@
 rootProject.name = 'ProductivityApp'
+
+// Check if node_modules exists (for EAS compatibility)
+def nodeModulesDir = new File(rootDir, '../node_modules')
+if (nodeModulesDir.exists()) {
+    // Include the React Native gradle plugin from node_modules
+    pluginManagement {
+        includeBuild("../node_modules/@react-native/gradle-plugin")
+    }
+    
+    // Apply the React Native settings plugin
+    plugins {
+        id("com.facebook.react.settings")
+    }
+    
+    // Configure React Native settings
+    extensions.configure(com.facebook.react.ReactSettingsExtension){ ex ->
+        ex.autolinkLibrariesFromCommand()
+    }
+    
+    // Apply Expo autolinking if available
+    def expoAutolinkingScript = new File(rootDir, '../node_modules/expo/scripts/autolinking.gradle')
+    if (expoAutolinkingScript.exists()) {
+        apply from: expoAutolinkingScript
+        useExpoModules()
+    }
+    
+    // Apply React Native CLI platform Android native modules
+    def nativeModulesScript = new File(rootDir, '../node_modules/@react-native-community/cli-platform-android/native_modules.gradle')
+    if (nativeModulesScript.exists()) {
+        apply from: nativeModulesScript
+        applyNativeModulesSettingsGradle(settings)
+    }
+} else {
+    // Minimal configuration when node_modules doesn't exist yet
+    println("Warning: node_modules not found. Using minimal configuration.")
+}
+
 include ':app'

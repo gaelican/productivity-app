@@ -7,8 +7,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "eas-build-pre-install": "echo 'Pre-install hook for EAS Build'",
-    "eas-build-post-install": "echo 'Post-install hook for EAS Build'"
+    "eas-build-pre-install": "./eas-build-pre-install.sh",
+    "eas-build-post-install": "./eas-build-post-install.sh"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.6",
