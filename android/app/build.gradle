@@ -72,6 +72,13 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+/**
+ * Whether to enable the Hermes JS engine.
+ * Hermes is an open-source JavaScript engine optimized for React Native.
+ * For more information visit https://reactnative.dev/docs/hermes
+ */
+def hermesEnabled = project.hasProperty('hermesEnabled') && project.hermesEnabled == 'true'
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
