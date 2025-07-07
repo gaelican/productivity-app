@@ -16,28 +16,6 @@
       "android": {
         "buildType": "apk",
         "image": "latest"
-      },
-      "hooks": {
-        "eas": {
-          "build": {
-            "onStart": {
-              "commands": [
-                {
-                  "command": "./eas-build-pre-install.sh",
-                  "cwd": "."
-                }
-              ]
-            },
-            "onComplete": {
-              "commands": [
-                {
-                  "command": "./eas-build-post-install.sh", 
-                  "cwd": "."
-                }
-              ]
-            }
-          }
-        }
       }
     },
     "production": {
@@ -48,5 +26,27 @@
   },
   "submit": {
     "production": {}
+  },
+  "hooks": {
+    "eas": {
+      "build": {
+        "onStart": {
+          "commands": [
+            {
+              "command": "./eas-build-pre-install.sh",
+              "cwd": "."
+            }
+          ]
+        },
+        "onComplete": {
+          "commands": [
+            {
+              "command": "./eas-build-post-install.sh", 
+              "cwd": "."
+            }
+          ]
+        }
+      }
+    }
   }
 }
