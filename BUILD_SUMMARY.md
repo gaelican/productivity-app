@@ -25,6 +25,7 @@
 | #9 | Gradle build error | Added RN gradle plugin to classpath (wrong) |
 | #10 | Gradle build error | Implemented conditional settings.gradle |
 | #11 | Gradle build error | Removed incorrect plugin references |
+| #12 | Unknown - need logs | Fixed plugins{} in if statement error |
 
 ## Deep Analysis Insights
 
