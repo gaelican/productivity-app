@@ -1,42 +1,31 @@
 rootProject.name = 'ProductivityApp'
 
-// Check if node_modules exists (for EAS compatibility)
-def nodeModulesDir = new File(rootDir, '../node_modules')
-def reactNativeGradlePlugin = new File(rootDir, '../node_modules/@react-native/gradle-plugin')
+// Include the app module first
+include ':app'
 
-if (nodeModulesDir.exists() && reactNativeGradlePlugin.exists()) {
-    // Include the React Native gradle plugin from node_modules
-    pluginManagement {
-        includeBuild("../node_modules/@react-native/gradle-plugin")
-    }
-    
-    // Apply the React Native settings plugin
-    plugins {
-        id("com.facebook.react.settings")
-    }
-    
-    // Configure React Native settings
-    extensions.configure(com.facebook.react.ReactSettingsExtension){ ex ->
-        ex.autolinkLibrariesFromCommand()
-    }
-    
-    // Apply Expo autolinking if available
-    def expoAutolinkingScript = new File(rootDir, '../node_modules/expo/scripts/autolinking.gradle')
-    if (expoAutolinkingScript.exists()) {
-        apply from: expoAutolinkingScript
-        useExpoModules()
-    }
-    
-    // Apply React Native CLI platform Android native modules
-    def nativeModulesScript = new File(rootDir, '../node_modules/@react-native-community/cli-platform-android/native_modules.gradle')
-    if (nativeModulesScript.exists()) {
-        apply from: nativeModulesScript
+// Traditional React Native setup for 0.74.5
+// This approach works better with EAS Build timing constraints
+
+def nodeModulesDir = new File(rootDir.parentFile, 'node_modules')
+
+if (nodeModulesDir.exists()) {
+    // Apply React Native CLI autolinking
+    def cliPlatformAndroid = new File(nodeModulesDir, '@react-native-community/cli-platform-android/native_modules.gradle')
+    if (cliPlatformAndroid.exists()) {
+        apply from: cliPlatformAndroid
         applyNativeModulesSettingsGradle(settings)
     }
+    
+    // Apply Expo autolinking
+    def expoAutolinking = new File(nodeModulesDir, 'expo/scripts/autolinking.gradle')
+    if (expoAutolinking.exists()) {
+        apply from: expoAutolinking
+        useExpoModules()
+    }
 } else {
-    // Minimal configuration when node_modules doesn't exist yet
-    println("Warning: node_modules not found. Using minimal configuration.")
-    println("This is expected during the initial gradle sync in EAS build.")
+    println("==========================================")
+    println("Warning: node_modules not found")
+    println("Path checked: ${nodeModulesDir.absolutePath}")
+    println("This is expected during initial EAS Build setup")
+    println("==========================================")
 }
-
-include ':app'

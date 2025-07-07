@@ -1,0 +1,16 @@
+// Minimal settings.gradle for React Native 0.74.5
+// Use this if the main settings.gradle causes issues
+
+rootProject.name = 'ProductivityApp'
+include ':app'
+
+// Only include autolinking if node_modules exists
+def nodeModulesDir = new File(rootDir, '../node_modules')
+if (nodeModulesDir.exists()) {
+    // Expo autolinking
+    def expoScript = new File(rootDir, '../node_modules/expo/scripts/autolinking.gradle')
+    if (expoScript.exists()) {
+        apply from: expoScript
+        useExpoModules()
+    }
+}

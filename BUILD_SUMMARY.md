@@ -21,7 +21,10 @@
 | #5 | rootproject plugin not found | Removed rootproject plugin |
 | #6 | Plugin 'com.facebook.react' not found | Tried RN 0.75+ config (wrong) |
 | #7 | Plugin 'com.facebook.react.settings' not found | Used RN 0.75+ plugin (wrong for 0.74.5) |
-| #8 | Gradle build error (passed settings phase) | Need to see actual gradle error |
+| #8 | Gradle build error (passed settings phase) | Made settings.gradle minimal |
+| #9 | Gradle build error | Added RN gradle plugin to classpath (wrong) |
+| #10 | Gradle build error | Implemented conditional settings.gradle |
+| #11 | Gradle build error | Removed incorrect plugin references |
 
 ## Deep Analysis Insights
 
