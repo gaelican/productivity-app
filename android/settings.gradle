@@ -2,7 +2,9 @@ rootProject.name = 'ProductivityApp'
 
 // Check if node_modules exists (for EAS compatibility)
 def nodeModulesDir = new File(rootDir, '../node_modules')
-if (nodeModulesDir.exists()) {
+def reactNativeGradlePlugin = new File(rootDir, '../node_modules/@react-native/gradle-plugin')
+
+if (nodeModulesDir.exists() && reactNativeGradlePlugin.exists()) {
     // Include the React Native gradle plugin from node_modules
     pluginManagement {
         includeBuild("../node_modules/@react-native/gradle-plugin")
@@ -34,6 +36,7 @@ if (nodeModulesDir.exists()) {
 } else {
     // Minimal configuration when node_modules doesn't exist yet
     println("Warning: node_modules not found. Using minimal configuration.")
+    println("This is expected during the initial gradle sync in EAS build.")
 }
 
 include ':app'

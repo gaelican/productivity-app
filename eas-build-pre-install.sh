@@ -1,17 +1,9 @@
 #!/bin/bash
-# EAS pre-install hook to ensure gradle configuration is correct
+# EAS pre-install hook for React Native 0.74.5
 
-echo "Running EAS pre-install hook..."
+echo "Running EAS pre-install hook for RN 0.74.5..."
 
-# Create a temporary settings.gradle that doesn't depend on node_modules
-if [ ! -f android/settings.gradle.original ]; then
-    cp android/settings.gradle android/settings.gradle.original
-fi
-
-# Use minimal settings for initial gradle evaluation
-cat > android/settings.gradle << 'SETTINGS'
-rootProject.name = 'ProductivityApp'
-include ':app'
-SETTINGS
+# The settings.gradle already handles missing node_modules
+# So we don't need to modify it here
 
 echo "Pre-install hook completed"
