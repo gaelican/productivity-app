@@ -11,6 +11,12 @@ if (nativeModulesGradle.exists()) {
     applyNativeModulesAppBuildGradle(project)
 }
 
+// Apply Android build fixes for React Native libraries
+def androidFixesGradle = file("../../patches/apply-fixes.gradle")
+if (androidFixesGradle.exists()) {
+    apply from: androidFixesGradle
+}
+
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */

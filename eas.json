@@ -4,6 +4,7 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "pre-install": "./patches/apply-fixes.sh",
     "development": {
       "developmentClient": false,
       "distribution": "internal",

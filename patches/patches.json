@@ -1,0 +1,110 @@
+[
+  {
+    "file": "node_modules/expo-modules-core/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/expo-modules-core/android/build.gradle\n+++ b/node_modules/expo-modules-core/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"expo.modules\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to expo-modules-core"
+  },
+  {
+    "file": "node_modules/expo-constants/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/expo-constants/android/build.gradle\n+++ b/node_modules/expo-constants/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"expo.modules.constants\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to expo-constants"
+  },
+  {
+    "file": "node_modules/expo-file-system/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/expo-file-system/android/build.gradle\n+++ b/node_modules/expo-file-system/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"expo.modules.filesystem\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to expo-file-system"
+  },
+  {
+    "file": "node_modules/expo-font/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/expo-font/android/build.gradle\n+++ b/node_modules/expo-font/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"expo.modules.font\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to expo-font"
+  },
+  {
+    "file": "node_modules/expo-keep-awake/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/expo-keep-awake/android/build.gradle\n+++ b/node_modules/expo-keep-awake/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"expo.modules.keepawake\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to expo-keep-awake"
+  },
+  {
+    "file": "node_modules/expo-splash-screen/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/expo-splash-screen/android/build.gradle\n+++ b/node_modules/expo-splash-screen/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"expo.modules.splashscreen\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to expo-splash-screen"
+  },
+  {
+    "file": "node_modules/@nozbe/watermelondb/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/@nozbe/watermelondb/android/build.gradle\n+++ b/node_modules/@nozbe/watermelondb/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"com.nozbe.watermelondb\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to @nozbe/watermelondb"
+  },
+  {
+    "file": "node_modules/@react-native-community/datetimepicker/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/@react-native-community/datetimepicker/android/build.gradle\n+++ b/node_modules/@react-native-community/datetimepicker/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"com.reactcommunity.rndatetimepicker\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to @react-native-community/datetimepicker"
+  },
+  {
+    "file": "node_modules/@react-native-async-storage/async-storage/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/@react-native-async-storage/async-storage/android/build.gradle\n+++ b/node_modules/@react-native-async-storage/async-storage/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"com.reactnativecommunity.asyncstorage\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to @react-native-async-storage/async-storage"
+  },
+  {
+    "file": "node_modules/@react-native-community/netinfo/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/@react-native-community/netinfo/android/build.gradle\n+++ b/node_modules/@react-native-community/netinfo/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"com.reactnativecommunity.netinfo\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to @react-native-community/netinfo"
+  },
+  {
+    "file": "node_modules/react-native-gesture-handler/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/react-native-gesture-handler/android/build.gradle\n+++ b/node_modules/react-native-gesture-handler/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"com.swmansion.gesturehandler\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to react-native-gesture-handler"
+  },
+  {
+    "file": "node_modules/react-native-reanimated/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/react-native-reanimated/android/build.gradle\n+++ b/node_modules/react-native-reanimated/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"com.swmansion.reanimated\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to react-native-reanimated"
+  },
+  {
+    "file": "node_modules/react-native-screens/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/react-native-screens/android/build.gradle\n+++ b/node_modules/react-native-screens/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"com.swmansion.rnscreens\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to react-native-screens"
+  },
+  {
+    "file": "node_modules/react-native-safe-area-context/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/react-native-safe-area-context/android/build.gradle\n+++ b/node_modules/react-native-safe-area-context/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"com.th3rdwave.safeareacontext\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to react-native-safe-area-context"
+  },
+  {
+    "file": "node_modules/react-native-svg/android/build.gradle",
+    "type": "namespace",
+    "content": "\n--- a/node_modules/react-native-svg/android/build.gradle\n+++ b/node_modules/react-native-svg/android/build.gradle\n@@ -1,5 +1,6 @@\n android {\n+    namespace \"com.horcrux.svg\"\n     compileSdkVersion safeExtGet('compileSdkVersion', 33)\n",
+    "description": "Add namespace to react-native-svg"
+  },
+  {
+    "file": "node_modules/@react-native-community/datetimepicker/android/build.gradle",
+    "type": "buildconfig",
+    "content": "\n--- a/node_modules/@react-native-community/datetimepicker/android/build.gradle\n+++ b/node_modules/@react-native-community/datetimepicker/android/build.gradle\n@@ -5,6 +5,10 @@ android {\n     defaultConfig {\n         minSdkVersion safeExtGet('minSdkVersion', 21)\n     }\n+    \n+    buildFeatures {\n+        buildConfig = true\n+    }\n }\n",
+    "description": "Enable BuildConfig for @react-native-community/datetimepicker"
+  },
+  {
+    "file": "node_modules/react-native-gesture-handler/android/build.gradle",
+    "type": "buildconfig",
+    "content": "\n--- a/node_modules/react-native-gesture-handler/android/build.gradle\n+++ b/node_modules/react-native-gesture-handler/android/build.gradle\n@@ -5,6 +5,10 @@ android {\n     defaultConfig {\n         minSdkVersion safeExtGet('minSdkVersion', 21)\n     }\n+    \n+    buildFeatures {\n+        buildConfig = true\n+    }\n }\n",
+    "description": "Enable BuildConfig for react-native-gesture-handler"
+  },
+  {
+    "file": "node_modules/react-native-reanimated/android/build.gradle",
+    "type": "buildconfig",
+    "content": "\n--- a/node_modules/react-native-reanimated/android/build.gradle\n+++ b/node_modules/react-native-reanimated/android/build.gradle\n@@ -5,6 +5,10 @@ android {\n     defaultConfig {\n         minSdkVersion safeExtGet('minSdkVersion', 21)\n     }\n+    \n+    buildFeatures {\n+        buildConfig = true\n+    }\n }\n",
+    "description": "Enable BuildConfig for react-native-reanimated"
+  }
+]
