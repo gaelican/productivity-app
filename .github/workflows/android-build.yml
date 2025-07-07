@@ -65,14 +65,14 @@ jobs:
         
     - name: Upload Debug APK
       if: github.event.inputs.build_type != 'release'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: app-debug-${{ github.sha }}
         path: android/app/build/outputs/apk/debug/app-debug.apk
         
     - name: Upload Release APK
       if: github.event.inputs.build_type == 'release'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: app-release-${{ github.sha }}
         path: android/app/build/outputs/apk/release/app-release.apk
