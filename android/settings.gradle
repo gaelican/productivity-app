@@ -1,20 +1,21 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = 'ProductivityApp'
 
-println "[SETTINGS] Starting settings configuration..."
-
-// Early interception of include method
+// First, wrap the original include method to filter out AsyncStorage
 def originalInclude = settings.&include
-def blockedIncludes = []
-
-settings.metaClass.include = { String... projectPaths ->
-    def filteredPaths = projectPaths.findAll { path ->
-        def pathLower = path.toLowerCase()
-        def shouldInclude = !pathLower.contains('async-storage') && 
-                           !pathLower.contains('async_storage') &&
-                           !pathLower.contains('asyncstorage')
+settings.metaClass.include = { String... paths ->
+    def filteredPaths = paths.findAll { path ->
+        boolean shouldInclude = !path.toLowerCase().contains('async-storage') && 
+                               !path.toLowerCase().contains('asyncstorage')
         if (!shouldInclude) {
-            blockedIncludes.add(path)
-            println "[SETTINGS] Blocked include: $path"
+            println "[SETTINGS] Blocking include: $path"
         }
         return shouldInclude
     }
@@ -46,39 +47,32 @@ if (nodeModulesDir.exists()) {
         apply from: expoAutolinking
         useExpoModules()
     }
-    
-    // Post-autolinking cleanup
-    gradle.settingsEvaluated {
-        println "[SETTINGS] Post-autolinking cleanup..."
-        println "[SETTINGS] Blocked includes: ${blockedIncludes}"
-        
-        // Remove any AsyncStorage projects that slipped through
-        def toRemove = []
-        settings.rootProject.children.each { proj ->
-            def nameLower = proj.name.toLowerCase()
-            if (nameLower.contains('async-storage') || 
-                nameLower.contains('async_storage') ||
-                nameLower.contains('asyncstorage')) {
-                toRemove.add(proj)
-            }
-        }
-        
-        toRemove.each { proj ->
-            println "[SETTINGS] Removing project: ${proj.name}"
-            settings.rootProject.children.remove(proj)
-        }
-        
-        println "[SETTINGS] Final project count: ${settings.rootProject.children.size()}"
-        settings.rootProject.children.each { proj ->
-            println "[SETTINGS] Project: ${proj.name}"
-        }
-    }
 } else {
-    println "=========================================="
-    println "Warning: node_modules not found"
-    println "Path checked: ${nodeModulesDir.absolutePath}"
-    println "This is expected during initial EAS Build setup"
-    println "=========================================="
+    println "[SETTINGS] node_modules not found, skipping autolinking"
 }
 
-println "[SETTINGS] Settings configuration complete"
+// Post-process to ensure AsyncStorage is removed
+println "[SETTINGS] Post-autolinking cleanup..."
+
+// Get all included projects and filter out AsyncStorage
+def blockedIncludes = []
+rootProject.children.each { project ->
+    if (project.name.toLowerCase().contains('async-storage') || 
+        project.name.toLowerCase().contains('asyncstorage')) {
+        blockedIncludes.add(project.name)
+    }
+}
+
+// Remove blocked projects
+blockedIncludes.each { projectName ->
+    println "[SETTINGS] Removing project: $projectName"
+    def projectToRemove = rootProject.children.find { it.name == projectName }
+    if (projectToRemove) {
+        rootProject.children.remove(projectToRemove)
+    }
+}
+
+println "[SETTINGS] Final project count: ${rootProject.children.size()}"
+rootProject.children.each { project ->
+    println "[SETTINGS] Project: ${project.name}"
+}

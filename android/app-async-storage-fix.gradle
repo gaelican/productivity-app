@@ -1,0 +1,50 @@
+// Fix for AsyncStorage missing project
+android {
+    // Ensure packaging options are set
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        pickFirst '**/*.so'
+    }
+}
+
+// Configure dependencies to exclude AsyncStorage
+configurations.all {
+    exclude group: 'com.reactnativecommunity', module: 'async-storage'
+    exclude group: '@react-native-async-storage', module: 'async-storage'
+    
+    resolutionStrategy {
+        // Force exclude AsyncStorage
+        eachDependency { details ->
+            if (details.requested.name.contains('async-storage') || 
+                details.requested.group.contains('async-storage')) {
+                details.useTarget = null
+            }
+        }
+    }
+}
+
+// Remove AsyncStorage from React Native autolinking if it exists
+project.afterEvaluate {
+    // Check if react.gradle added AsyncStorage
+    def hasAsyncStorage = false
+    try {
+        project(':react-native-async-storage_async-storage')
+        hasAsyncStorage = true
+    } catch (UnknownProjectException e) {
+        // AsyncStorage project doesn't exist, which is what we want
+    }
+    
+    if (hasAsyncStorage) {
+        println "[APP] WARNING: AsyncStorage project found, attempting to remove dependency"
+        // Remove from dependencies
+        configurations.all { config ->
+            config.dependencies.removeIf { dep ->
+                dep.name?.contains('async-storage') || dep.group?.contains('async-storage')
+            }
+        }
+    }
+}
