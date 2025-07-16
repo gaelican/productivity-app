@@ -73,8 +73,19 @@ jobs:
     
     - name: Apply Solution ${{ matrix.solution }}
       run: |
-        chmod +x scripts/apply-solution-${{ matrix.solution }}.sh
-        ./scripts/apply-solution-${{ matrix.solution }}.sh
+        echo "Current directory: $(pwd)"
+        echo "Listing scripts directory:"
+        ls -la scripts/
+        echo "Checking if script exists:"
+        if [ -f "scripts/apply-solution-${{ matrix.solution }}.sh" ]; then
+          echo "Script exists, making executable"
+          chmod +x scripts/apply-solution-${{ matrix.solution }}.sh
+          echo "Running script with bash"
+          bash scripts/apply-solution-${{ matrix.solution }}.sh
+        else
+          echo "ERROR: Script scripts/apply-solution-${{ matrix.solution }}.sh not found!"
+          exit 1
+        fi
       continue-on-error: true
     
     - name: Install dependencies
