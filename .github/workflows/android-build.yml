@@ -49,14 +49,18 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
         
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      with:
-        packages: |
-          platform-tools
-          platforms;android-34
-          build-tools;34.0.0
-          ndk;26.1.10909125
+    - name: Accept Android licenses
+      run: |
+        yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        
+    - name: Install Android SDK components
+      run: |
+        echo "Installing Android SDK components..."
+        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+          "platform-tools" \
+          "platforms;android-34" \
+          "build-tools;34.0.0" \
+          "ndk;26.1.10909125"
         
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
