@@ -1,0 +1,123 @@
+// Diagnostic logging to help identify AsyncStorage dependencies
+println "\n=========================================="
+println "DIAGNOSTIC: AsyncStorage Dependency Analysis"
+println "==========================================\n"
+
+// Track all native modules being registered
+def nativeModules = []
+def suspiciousDependencies = []
+
+// Hook into project evaluation to log all dependencies
+allprojects { project ->
+    project.afterEvaluate {
+        println "\n[DIAGNOSTIC] Analyzing project: ${project.path}"
+        println "[DIAGNOSTIC] Project name: ${project.name}"
+        
+        // Check if this is a native module
+        if (project.hasProperty('react-native')) {
+            nativeModules.add(project.name)
+            println "[DIAGNOSTIC] Found React Native module: ${project.name}"
+        }
+        
+        // Analyze configurations
+        project.configurations.each { config ->
+            config.dependencies.each { dep ->
+                // Log all dependencies for debugging
+                if (dep.group && dep.name) {
+                    def depString = "${dep.group}:${dep.name}:${dep.version ?: '+'}"
+                    
+                    // Check for suspicious dependencies
+                    if (dep.name.toLowerCase().contains('storage') ||
+                        dep.name.toLowerCase().contains('persist') ||
+                        dep.name.toLowerCase().contains('watermelon') ||
+                        dep.name.toLowerCase().contains('redux-persist')) {
+                        suspiciousDependencies.add([
+                            project: project.path,
+                            config: config.name,
+                            dependency: depString
+                        ])
+                        println "[DIAGNOSTIC] ⚠️  Suspicious dependency in ${config.name}: $depString"
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Log dependency resolution
+gradle.projectsEvaluated {
+    println "\n[DIAGNOSTIC] ===== Native Modules Found ====="
+    nativeModules.each { module ->
+        println "  - $module"
+    }
+    
+    println "\n[DIAGNOSTIC] ===== Suspicious Dependencies ====="
+    if (suspiciousDependencies.isEmpty()) {
+        println "  None found"
+    } else {
+        suspiciousDependencies.each { info ->
+            println "  Project: ${info.project}"
+            println "  Config: ${info.config}"
+            println "  Dependency: ${info.dependency}"
+            println "  ---"
+        }
+    }
+    
+    // Check for AsyncStorage in various forms
+    println "\n[DIAGNOSTIC] ===== AsyncStorage Detection ====="
+    def asyncStorageFound = false
+    
+    rootProject.allprojects { project ->
+        if (project.name.toLowerCase().contains('async-storage') ||
+            project.name.toLowerCase().contains('async_storage')) {
+            println "  ❌ Found AsyncStorage project: ${project.path}"
+            asyncStorageFound = true
+            
+            // Try to trace where it came from
+            println "     Parent: ${project.parent?.path ?: 'none'}"
+            println "     HasProperty react-native: ${project.hasProperty('react-native')}"
+        }
+    }
+    
+    if (!asyncStorageFound) {
+        println "  ✅ No AsyncStorage projects detected"
+    }
+    
+    // Log included projects
+    println "\n[DIAGNOSTIC] ===== All Included Projects ====="
+    rootProject.allprojects { project ->
+        println "  - ${project.path} (${project.name})"
+    }
+}
+
+// Monitor task execution
+gradle.taskGraph.whenReady { taskGraph ->
+    println "\n[DIAGNOSTIC] ===== Task Graph Analysis ====="
+    def asyncStorageTasks = taskGraph.allTasks.findAll { task ->
+        task.project.name.toLowerCase().contains('async-storage') ||
+        task.project.name.toLowerCase().contains('async_storage')
+    }
+    
+    if (!asyncStorageTasks.isEmpty()) {
+        println "  ⚠️  AsyncStorage tasks in build graph:"
+        asyncStorageTasks.each { task ->
+            println "    - ${task.path}"
+            println "      Project: ${task.project.path}"
+            println "      Type: ${task.class.simpleName}"
+        }
+    } else {
+        println "  ✅ No AsyncStorage tasks in build graph"
+    }
+}
+
+// Log when specific files are accessed
+gradle.beforeSettings { settings ->
+    println "\n[DIAGNOSTIC] Settings evaluation starting..."
+}
+
+gradle.settingsEvaluated { settings ->
+    println "[DIAGNOSTIC] Settings evaluated. Projects: ${settings.rootProject.children.size()}"
+}
+
+println "\n[DIAGNOSTIC] Diagnostic logging configured"
+println "==========================================\n"

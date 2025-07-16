@@ -1,17 +1,40 @@
 rootProject.name = 'ProductivityApp'
 
-// Include the app module first
-include ':app'
+println "[SETTINGS] Starting settings configuration..."
 
-// Traditional React Native setup for 0.74.5
-// This approach works better with EAS Build timing constraints
+// Early interception of include method
+def originalInclude = settings.&include
+def blockedIncludes = []
+
+settings.metaClass.include = { String... projectPaths ->
+    def filteredPaths = projectPaths.findAll { path ->
+        def pathLower = path.toLowerCase()
+        def shouldInclude = !pathLower.contains('async-storage') && 
+                           !pathLower.contains('async_storage') &&
+                           !pathLower.contains('asyncstorage')
+        if (!shouldInclude) {
+            blockedIncludes.add(path)
+            println "[SETTINGS] Blocked include: $path"
+        }
+        return shouldInclude
+    }
+    if (filteredPaths.size() > 0) {
+        originalInclude(*filteredPaths)
+    }
+}
+
+// Include app module
+include ':app'
 
 def nodeModulesDir = new File(rootDir.parentFile, 'node_modules')
 
 if (nodeModulesDir.exists()) {
+    println "[SETTINGS] node_modules found, applying autolinking..."
+    
     // Apply React Native CLI autolinking
     def cliPlatformAndroid = new File(nodeModulesDir, '@react-native-community/cli-platform-android/native_modules.gradle')
     if (cliPlatformAndroid.exists()) {
+        println "[SETTINGS] Applying React Native CLI autolinking..."
         apply from: cliPlatformAndroid
         applyNativeModulesSettingsGradle(settings)
     }
@@ -19,13 +42,43 @@ if (nodeModulesDir.exists()) {
     // Apply Expo autolinking
     def expoAutolinking = new File(nodeModulesDir, 'expo/scripts/autolinking.gradle')
     if (expoAutolinking.exists()) {
+        println "[SETTINGS] Applying Expo autolinking..."
         apply from: expoAutolinking
         useExpoModules()
     }
+    
+    // Post-autolinking cleanup
+    gradle.settingsEvaluated {
+        println "[SETTINGS] Post-autolinking cleanup..."
+        println "[SETTINGS] Blocked includes: ${blockedIncludes}"
+        
+        // Remove any AsyncStorage projects that slipped through
+        def toRemove = []
+        settings.rootProject.children.each { proj ->
+            def nameLower = proj.name.toLowerCase()
+            if (nameLower.contains('async-storage') || 
+                nameLower.contains('async_storage') ||
+                nameLower.contains('asyncstorage')) {
+                toRemove.add(proj)
+            }
+        }
+        
+        toRemove.each { proj ->
+            println "[SETTINGS] Removing project: ${proj.name}"
+            settings.rootProject.children.remove(proj)
+        }
+        
+        println "[SETTINGS] Final project count: ${settings.rootProject.children.size()}"
+        settings.rootProject.children.each { proj ->
+            println "[SETTINGS] Project: ${proj.name}"
+        }
+    }
 } else {
-    println("==========================================")
-    println("Warning: node_modules not found")
-    println("Path checked: ${nodeModulesDir.absolutePath}")
-    println("This is expected during initial EAS Build setup")
-    println("==========================================")
+    println "=========================================="
+    println "Warning: node_modules not found"
+    println "Path checked: ${nodeModulesDir.absolutePath}"
+    println "This is expected during initial EAS Build setup"
+    println "=========================================="
 }
+
+println "[SETTINGS] Settings configuration complete"

@@ -1,0 +1,21 @@
+// Dummy module to satisfy Gradle dependency resolution
+// This module does nothing but prevents build failures
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace "com.reactnativecommunity.asyncstorage.dummy"
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+    }
+}
+
+dependencies {
+    implementation 'com.facebook.react:react-native:+'
+}
+
+// Log that this dummy module is being used
+println "[AsyncStorage] Using dummy module to prevent build failures"

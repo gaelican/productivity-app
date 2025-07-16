@@ -11,6 +11,9 @@ if (nativeModulesGradle.exists()) {
     applyNativeModulesAppBuildGradle(project)
 }
 
+// Apply post-autolinking cleanup
+apply from: "../gradle/post-autolinking-cleanup.gradle"
+
 // Apply Android build fixes for React Native libraries
 def androidFixesGradle = file("../../patches/apply-fixes.gradle")
 if (androidFixesGradle.exists()) {
@@ -103,6 +106,24 @@ android {
     }
 }
 
+// Configure dependency resolution to exclude AsyncStorage
+configurations.all {
+    resolutionStrategy {
+        // Force exclude AsyncStorage from all configurations
+        exclude group: 'com.reactnativecommunity', module: 'async-storage'
+        exclude group: 'com.reactnativecommunity', module: 'react-native-async-storage'
+        
+        // If any dependency requires AsyncStorage, fail the build with a clear message
+        eachDependency { DependencyResolveDetails details ->
+            if (details.requested.name.contains('async-storage') || 
+                details.requested.module.contains('async-storage')) {
+                println "WARNING: Dependency ${details.requested} is trying to include AsyncStorage"
+                details.useVersion '0.0.0' // Force a non-existent version to fail
+            }
+        }
+    }
+}
+
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
@@ -113,5 +134,9 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+    
+    // Explicitly exclude AsyncStorage from all dependencies
+    implementation("com.facebook.react:react-android") {
+        exclude group: 'com.reactnativecommunity', module: 'async-storage'
+    }
 }
-

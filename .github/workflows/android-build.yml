@@ -13,14 +13,28 @@ on:
         options:
           - debug
           - release
+      verbose_logs:
+        description: 'Enable verbose logging'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  REACT_NATIVE_VERSION: 0.73.6
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -33,57 +47,168 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
+        cache: 'gradle'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        packages: |
+          platform-tools
+          platforms;android-34
+          build-tools;34.0.0
+          ndk;26.1.10909125
         
     - name: Cache Gradle dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
+          android/.gradle
+          android/build
+          android/app/build
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
     
     - name: Install npm dependencies
-      run: npm ci
+      run: |
+        echo "📦 Installing dependencies..."
+        npm ci --legacy-peer-deps
+        
+        # Run post-install scripts
+        if [ -f "scripts/fix-library-issues.js" ]; then
+          echo "🔧 Running library fixes..."
+          node scripts/fix-library-issues.js
+        fi
+        
+        if [ -f "scripts/clean-async-storage.js" ]; then
+          echo "🧹 Cleaning AsyncStorage..."
+          node scripts/clean-async-storage.js
+        fi
       
     - name: Create local.properties
       run: |
         echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+        echo "✅ Created local.properties"
+        
+    - name: Verify React Native setup
+      run: |
+        echo "🔍 Checking React Native version..."
+        npm list react-native || true
+        echo "📱 React Native info:"
+        npx react-native info || true
+        
+    - name: Make Gradle wrapper executable
+      run: |
+        cd android
+        chmod +x gradlew
+        echo "✅ Made gradlew executable"
+        
+    - name: Clean Gradle build
+      run: |
+        cd android
+        ./gradlew clean || true
+        echo "🧹 Cleaned previous build artifacts"
         
     - name: Build Debug APK
       if: github.event.inputs.build_type != 'release'
       run: |
         cd android
-        ./gradlew assembleDebug
+        echo "🏗️ Building Debug APK..."
+        
+        if [ "${{ github.event.inputs.verbose_logs }}" == "true" ]; then
+          ./gradlew assembleDebug --no-daemon --stacktrace --info
+        else
+          ./gradlew assembleDebug --no-daemon --stacktrace
+        fi
+      env:
+        GRADLE_OPTS: -Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
         
     - name: Build Release APK
       if: github.event.inputs.build_type == 'release'
       run: |
         cd android
-        ./gradlew assembleRelease
+        echo "🏗️ Building Release APK..."
+        
+        if [ "${{ github.event.inputs.verbose_logs }}" == "true" ]; then
+          ./gradlew assembleRelease --no-daemon --stacktrace --info
+        else
+          ./gradlew assembleRelease --no-daemon --stacktrace
+        fi
+      env:
+        GRADLE_OPTS: -Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
+        
+    - name: Upload build logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gradle-build-logs-${{ github.sha }}
+        path: |
+          android/app/build/reports/
+          android/build/
+          android/app/build/outputs/logs/
+          android/app/build/tmp/
+        retention-days: 7
+        
+    - name: Find and verify APK
+      id: find_apk
+      run: |
+        if [ "${{ github.event.inputs.build_type }}" == "release" ]; then
+          APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          APK_NAME="app-release"
+        else
+          APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -1)
+          APK_NAME="app-debug"
+        fi
+        
+        if [ -z "$APK_PATH" ]; then
+          echo "❌ APK not found!"
+          exit 1
+        fi
+        
+        echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+        echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+        echo "✅ Found APK at: $APK_PATH"
+        ls -lah "$APK_PATH"
         
     - name: Upload Debug APK
       if: github.event.inputs.build_type != 'release'
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-${{ github.sha }}
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+        path: ${{ steps.find_apk.outputs.apk_path }}
+        retention-days: 30
         
     - name: Upload Release APK
       if: github.event.inputs.build_type == 'release'
       uses: actions/upload-artifact@v4
       with:
         name: app-release-${{ github.sha }}
-        path: android/app/build/outputs/apk/release/app-release.apk
+        path: ${{ steps.find_apk.outputs.apk_path }}
+        retention-days: 30
         
-    - name: Create Release
-      if: github.ref == 'refs/heads/master' && github.event.inputs.build_type == 'release'
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ github.run_number }}
-        release_name: Release Build ${{ github.run_number }}
-        draft: false
-        prerelease: false
+    - name: Generate build summary
+      if: success()
+      run: |
+        echo "# 🎉 Build Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📱 Build Information" >> $GITHUB_STEP_SUMMARY
+        echo "- **Build Type:** ${{ github.event.inputs.build_type || 'debug' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **React Native Version:** ${{ env.REACT_NATIVE_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Verbose Logs:** ${{ github.event.inputs.verbose_logs || 'true' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- APK: \`${{ steps.find_apk.outputs.apk_name }}-${{ github.sha }}.apk\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📥 Download" >> $GITHUB_STEP_SUMMARY
+        echo "The APK can be downloaded from the artifacts section of this workflow run." >> $GITHUB_STEP_SUMMARY
+        
+    - name: Post build cleanup
+      if: always()
+      run: |
+        cd android
+        ./gradlew clean || true
+        echo "🧹 Cleaned up build artifacts"

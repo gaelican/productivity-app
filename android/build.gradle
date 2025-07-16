@@ -1,5 +1,11 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+// Apply aggressive AsyncStorage exclusion FIRST
+apply from: 'gradle/aggressive-async-storage-exclude.gradle'
+
+// Apply diagnostic logging to help debug issues
+apply from: 'gradle/diagnostic-logging.gradle'
+
 buildscript {
     ext {
         buildToolsVersion = findProperty('android.buildToolsVersion') ?: '34.0.0'
@@ -35,6 +41,47 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://www.jitpack.io' }
+    }
+    
+    // Global configuration to exclude AsyncStorage
+    configurations.all {
+        resolutionStrategy {
+            // Force exclude AsyncStorage from ALL modules
+            exclude group: 'com.reactnativecommunity', module: 'async-storage'
+            exclude group: 'com.reactnativecommunity', module: 'react-native-async-storage'
+            exclude group: '@react-native-async-storage', module: 'async-storage'
+        }
+    }
+    
+    // Apply to all sub-projects
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                // Ensure consistent SDK versions
+                compileSdkVersion rootProject.ext.compileSdkVersion
+                buildToolsVersion rootProject.ext.buildToolsVersion
+                
+                defaultConfig {
+                    minSdkVersion rootProject.ext.minSdkVersion
+                    targetSdkVersion rootProject.ext.targetSdkVersion
+                }
+            }
+        }
+    }
+}
+
+// Fix for modules with incorrect naming
+gradle.projectsEvaluated {
+    rootProject.allprojects { project ->
+        // Skip any project with async-storage in the name
+        if (project.name.contains('async-storage') || 
+            project.name.contains('async_storage') ||
+            project.path.contains('async-storage')) {
+            println "Disabling project: ${project.path}"
+            project.tasks.all { task ->
+                task.enabled = false
+            }
+        }
     }
 }
 

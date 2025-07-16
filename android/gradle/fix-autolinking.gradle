@@ -1,0 +1,35 @@
+// Fix autolinking to completely skip AsyncStorage
+// This must be applied BEFORE native_modules.gradle
+
+// Store the original applyNativeModulesSettingsGradle function
+def originalApplyNativeModulesSettingsGradle = null
+
+// Override the function before it's used
+gradle.beforeSettings { settings ->
+    // Wait for the function to be defined, then override it
+    settings.gradle.settingsEvaluated {
+        if (settings.ext.has('applyNativeModulesSettingsGradle')) {
+            originalApplyNativeModulesSettingsGradle = settings.ext.applyNativeModulesSettingsGradle
+            
+            settings.ext.applyNativeModulesSettingsGradle = { DefaultSettings defaultSettings, String root = null ->
+                // Call original function
+                originalApplyNativeModulesSettingsGradle(defaultSettings, root)
+                
+                // Remove AsyncStorage projects after they've been added
+                def projectsToRemove = []
+                defaultSettings.gradle.rootProject.children.each { project ->
+                    if (project.name.contains('async-storage') || 
+                        project.name.contains('async_storage') ||
+                        project.name == 'react-native-async-storage_async-storage') {
+                        projectsToRemove.add(project)
+                    }
+                }
+                
+                projectsToRemove.each { project ->
+                    println "[AsyncStorage Fix] Removing autolinking project: ${project.name}"
+                    defaultSettings.gradle.rootProject.children.remove(project)
+                }
+            }
+        }
+    }
+}

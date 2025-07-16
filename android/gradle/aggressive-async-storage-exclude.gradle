@@ -1,0 +1,51 @@
+// Aggressive AsyncStorage exclusion strategy
+// This implements multiple layers of exclusion to ensure AsyncStorage is never included
+
+println "[AGGRESSIVE-EXCLUDE] Applying comprehensive AsyncStorage exclusion..."
+
+// 1. Configuration-level exclusions for all projects
+allprojects { project ->
+    project.configurations.all { config ->
+        // Add exclusions
+        config.exclude group: 'com.reactnativecommunity', module: 'async-storage'
+        config.exclude group: 'com.reactnativecommunity', module: 'react-native-async-storage'
+        config.exclude group: '@react-native-async-storage', module: 'async-storage'
+        config.exclude group: '@react-native-community', module: 'async-storage'
+    }
+}
+
+// 2. Task-level disabling for AsyncStorage projects
+gradle.projectsEvaluated {
+    rootProject.allprojects { project ->
+        def projectName = project.name.toLowerCase()
+        def projectPath = project.path.toLowerCase()
+        
+        if (projectName.contains('async-storage') ||
+            projectName.contains('async_storage') ||
+            projectPath.contains('async-storage')) {
+            println "[AGGRESSIVE-EXCLUDE] Disabling all tasks for project: ${project.path}"
+            project.tasks.all { task ->
+                task.enabled = false
+            }
+        }
+    }
+}
+
+// 3. Forcefully fail if AsyncStorage is detected
+gradle.taskGraph.whenReady { taskGraph ->
+    def asyncStorageTasks = taskGraph.allTasks.findAll { task ->
+        def taskName = task.project.name.toLowerCase()
+        taskName.contains('async-storage') ||
+        taskName.contains('async_storage')
+    }
+    
+    if (!asyncStorageTasks.isEmpty()) {
+        println "[AGGRESSIVE-EXCLUDE] ERROR: AsyncStorage tasks detected in build:"
+        asyncStorageTasks.each { task ->
+            println "  - ${task.path}"
+        }
+        throw new GradleException("AsyncStorage is not allowed in this project. Found ${asyncStorageTasks.size()} AsyncStorage tasks.")
+    }
+}
+
+println "[AGGRESSIVE-EXCLUDE] Exclusion strategy applied successfully"

@@ -1,0 +1,56 @@
+// Gradle script to completely disable AsyncStorage during settings phase
+// This file is applied from settings.gradle BEFORE autolinking
+
+// Hook into settings evaluation to prevent AsyncStorage project from being included
+gradle.settingsEvaluated { settings ->
+    // Create a list to track projects to remove
+    def projectsToRemove = []
+    
+    // Check all included projects
+    settings.rootProject.children.each { project ->
+        if (project.name.contains('async-storage') || 
+            project.name.contains('async_storage') ||
+            project.name == 'react-native-async-storage_async-storage') {
+            projectsToRemove.add(project)
+        }
+    }
+    
+    // Remove AsyncStorage projects
+    projectsToRemove.each { project ->
+        println "[AsyncStorage Blocker] Removing project: ${project.name}"
+        settings.rootProject.children.remove(project)
+    }
+}
+
+// Override the include method to filter out AsyncStorage
+def originalInclude = settings.&include
+settings.metaClass.include = { String... projectPaths ->
+    def filteredPaths = projectPaths.findAll { path ->
+        boolean shouldInclude = !path.contains('async-storage') && 
+                               !path.contains('async_storage') &&
+                               !path.contains('AsyncStorage')
+        if (!shouldInclude) {
+            println "[AsyncStorage Blocker] Blocking include of: ${path}"
+        }
+        return shouldInclude
+    }
+    if (filteredPaths.size() > 0) {
+        originalInclude(*filteredPaths)
+    }
+}
+
+// Also hook project method in case it's used
+def originalProject = settings.&project
+settings.metaClass.project = { String path, Closure closure = null ->
+    if (path.contains('async-storage') || 
+        path.contains('async_storage') ||
+        path.contains('AsyncStorage')) {
+        println "[AsyncStorage Blocker] Blocking project configuration for: ${path}"
+        return
+    }
+    if (closure) {
+        originalProject(path, closure)
+    } else {
+        originalProject(path)
+    }
+}

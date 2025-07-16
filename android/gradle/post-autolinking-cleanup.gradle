@@ -1,0 +1,94 @@
+// Post-autolinking cleanup to ensure no AsyncStorage projects remain
+// This script should be applied after all autolinking is complete
+
+println "[POST-AUTOLINKING-CLEANUP] Starting cleanup process..."
+
+// Function to recursively find and remove AsyncStorage projects
+def removeAsyncStorageProjects = { rootProj ->
+    def toRemove = []
+    
+    // Find all projects that need removal
+    def findProjects
+    findProjects = { proj ->
+        if (proj.name.toLowerCase().contains('async-storage') ||
+            proj.name.toLowerCase().contains('async_storage') ||
+            proj.name.toLowerCase().contains('asyncstorage')) {
+            toRemove.add(proj)
+            println "[POST-AUTOLINKING-CLEANUP] Found AsyncStorage project: ${proj.path}"
+        }
+        proj.children.each { child ->
+            findProjects(child)
+        }
+    }
+    
+    findProjects(rootProj)
+    
+    // Remove the projects
+    toRemove.each { proj ->
+        println "[POST-AUTOLINKING-CLEANUP] Removing project: ${proj.path}"
+        proj.parent.children.remove(proj)
+    }
+    
+    return toRemove.size()
+}
+
+// Apply cleanup when project is evaluated
+gradle.projectsEvaluated {
+    println "[POST-AUTOLINKING-CLEANUP] Projects evaluated, checking for AsyncStorage..."
+    
+    def removed = removeAsyncStorageProjects(rootProject)
+    println "[POST-AUTOLINKING-CLEANUP] Removed $removed AsyncStorage projects"
+    
+    // Also check configurations
+    allprojects { project ->
+        project.configurations.all { config ->
+            config.resolutionStrategy {
+                // Force exclude AsyncStorage
+                config.exclude group: 'com.reactnativecommunity', module: 'async-storage'
+                config.exclude group: 'com.reactnativecommunity', module: 'react-native-async-storage'
+                config.exclude group: '@react-native-async-storage', module: 'async-storage'
+                
+                // Check dependencies
+                config.dependencies.each { dep ->
+                    if (dep.name && (dep.name.contains('async-storage') || dep.name.contains('async_storage'))) {
+                        println "[POST-AUTOLINKING-CLEANUP] WARNING: Found AsyncStorage dependency: ${dep.group}:${dep.name}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Also hook into beforeEvaluate for each project
+allprojects { project ->
+    project.beforeEvaluate {
+        // Skip AsyncStorage projects
+        if (project.name.toLowerCase().contains('async-storage') ||
+            project.name.toLowerCase().contains('async_storage')) {
+            println "[POST-AUTOLINKING-CLEANUP] Disabling project: ${project.path}"
+            project.tasks.all { task ->
+                task.enabled = false
+            }
+        }
+    }
+}
+
+// Final verification
+gradle.buildFinished {
+    println "[POST-AUTOLINKING-CLEANUP] Build finished, final AsyncStorage check..."
+    def foundAsyncStorage = false
+    
+    allprojects { project ->
+        if (project.name.toLowerCase().contains('async-storage') ||
+            project.name.toLowerCase().contains('async_storage')) {
+            println "[POST-AUTOLINKING-CLEANUP] ERROR: AsyncStorage still present: ${project.path}"
+            foundAsyncStorage = true
+        }
+    }
+    
+    if (!foundAsyncStorage) {
+        println "[POST-AUTOLINKING-CLEANUP] ✅ No AsyncStorage projects found in final build"
+    }
+}
+
+println "[POST-AUTOLINKING-CLEANUP] Cleanup script applied successfully"

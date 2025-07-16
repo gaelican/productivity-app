@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "eas-build-pre-install": "./eas-build-pre-install.sh",
     "eas-build-post-install": "./eas-build-post-install.sh",
-    "postinstall": "node scripts/fix-library-issues.js"
+    "postinstall": "node scripts/fix-library-issues.js && node scripts/clean-async-storage.js"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.6",
