@@ -41,7 +41,7 @@ if (!fs.existsSync(dummyDir)) {
     version: "0.0.0",
     description: "Dummy package to prevent build errors",
     main: "index.js",
-    react-native: {
+    "react-native": {
       platforms: {
         android: null,
         ios: null
