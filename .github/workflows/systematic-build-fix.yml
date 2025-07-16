@@ -1,0 +1,211 @@
+name: Systematic Build Fix - Parallel Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      solutions_to_test:
+        description: 'Solutions to test (comma-separated or "all")'
+        required: true
+        default: 'all'
+        type: string
+      verbose_logging:
+        description: 'Enable verbose gradle logging'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Set up solution matrix
+      id: set-matrix
+      run: |
+        if [ "${{ github.event.inputs.solutions_to_test }}" == "all" ]; then
+          echo 'matrix={"solution":["a","b","c","d","e","f","g","h","i","j","k"]}' >> $GITHUB_OUTPUT
+        else
+          solutions=$(echo "${{ github.event.inputs.solutions_to_test }}" | tr ',' '\n' | jq -R . | jq -s -c 'map(ascii_downcase)')
+          echo "matrix={\"solution\":$solutions}" >> $GITHUB_OUTPUT
+        fi
+
+  test-solution:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+      fail-fast: false
+      max-parallel: 11
+    
+    name: Test Solution ${{ matrix.solution }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Apply Solution ${{ matrix.solution }}
+      run: |
+        echo "::group::Applying Solution ${{ matrix.solution }}"
+        chmod +x .github/scripts/apply-solution-${{ matrix.solution }}.sh
+        bash .github/scripts/apply-solution-${{ matrix.solution }}.sh
+        echo "::endgroup::"
+      continue-on-error: true
+    
+    - name: Install dependencies
+      run: |
+        echo "::group::Installing dependencies"
+        npm install --legacy-peer-deps
+        echo "::endgroup::"
+      continue-on-error: true
+      
+    - name: Build Android APK
+      id: build
+      run: |
+        echo "::group::Building Android APK"
+        cd android
+        if [ "${{ github.event.inputs.verbose_logging }}" == "true" ]; then
+          ./gradlew assembleRelease --no-daemon --stacktrace --info 2>&1 | tee ../build.log
+        else
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee ../build.log
+        fi
+        build_status=$?
+        echo "::endgroup::"
+        
+        if [ $build_status -eq 0 ]; then
+          echo "build_status=success" >> $GITHUB_OUTPUT
+          echo "✅ Solution ${{ matrix.solution }} build SUCCEEDED!"
+        else
+          echo "build_status=failure" >> $GITHUB_OUTPUT
+          echo "❌ Solution ${{ matrix.solution }} build FAILED"
+          # Extract key error from log
+          echo "::group::Key errors"
+          grep -E "(ERROR|FAILURE|error:|Error:|failed|Failed)" ../build.log | head -20 || true
+          echo "::endgroup::"
+        fi
+        exit 0
+        
+    - name: Test APK exists
+      if: steps.build.outputs.build_status == 'success'
+      run: |
+        if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+          echo "✅ APK file generated successfully"
+          ls -la android/app/build/outputs/apk/release/
+        else
+          echo "❌ APK file not found"
+          exit 1
+        fi
+        
+    - name: Upload APK
+      if: steps.build.outputs.build_status == 'success'
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-solution-${{ matrix.solution }}
+        path: android/app/build/outputs/apk/release/*.apk
+        
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: logs-solution-${{ matrix.solution }}
+        path: |
+          build.log
+          android/build/reports/
+          
+  summarize:
+    needs: test-solution
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+      
+    - name: Generate summary report
+      run: |
+        echo "# 🔧 Systematic Build Fix Results" > $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📊 Solution Testing Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Solution | Description | Status | APK | Logs |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|-------------|--------|-----|------|" >> $GITHUB_STEP_SUMMARY
+        
+        solutions=("a:Version Alignment" "b:Stub/Mock AsyncStorage" "c:Clean Gradle Config" "d:Template Reset" "e:Force Resolutions" "f:Docker Build" "g:Remove Conflicting Deps" "h:Custom Gradle Plugin" "i:Patch Packages" "j:Hybrid Approach" "k:EAS-Specific Fixes")
+        
+        successful_solutions=""
+        
+        for solution_desc in "${solutions[@]}"; do
+          IFS=':' read -r solution description <<< "$solution_desc"
+          
+          # Check if APK exists
+          if [ -d "artifacts/app-solution-$solution" ]; then
+            status="✅ Success"
+            apk_link="[Download](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            successful_solutions="$successful_solutions $solution"
+          else
+            status="❌ Failed"
+            apk_link="-"
+          fi
+          
+          # Check if logs exist
+          if [ -d "artifacts/logs-solution-$solution" ]; then
+            log_link="[View](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          else
+            log_link="-"
+          fi
+          
+          echo "| **$solution** | $description | $status | $apk_link | $log_link |" >> $GITHUB_STEP_SUMMARY
+        done
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -n "$successful_solutions" ]; then
+          echo "## ✅ Successful Solutions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The following solutions built successfully:" >> $GITHUB_STEP_SUMMARY
+          for sol in $successful_solutions; do
+            echo "- Solution ${sol^^}" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Recommended Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download the APK from the most appropriate solution" >> $GITHUB_STEP_SUMMARY
+          echo "2. Test the APK on a device to ensure functionality" >> $GITHUB_STEP_SUMMARY
+          echo "3. Apply the chosen solution permanently to your codebase" >> $GITHUB_STEP_SUMMARY
+          echo "4. Document the fix for future reference" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ❌ All Solutions Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Unfortunately, none of the solutions produced a successful build." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Debugging Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review the build logs for each solution" >> $GITHUB_STEP_SUMMARY
+          echo "2. Look for common error patterns across all solutions" >> $GITHUB_STEP_SUMMARY
+          echo "3. Consider creating a minimal reproducible example" >> $GITHUB_STEP_SUMMARY
+          echo "4. Check React Native GitHub issues for similar problems" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "---" >> $GITHUB_STEP_SUMMARY
+        echo "*Generated at $(date -u)*" >> $GITHUB_STEP_SUMMARY
