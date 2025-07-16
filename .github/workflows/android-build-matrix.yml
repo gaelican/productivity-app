@@ -1,0 +1,40 @@
+name: Build Android APK Matrix
+
+on:
+  push:
+    branches: [ main, master, downgrade-to-rn-073 ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [debug, release]
+        include:
+          - build_type: debug
+            gradle_task: assembleDebug
+            apk_name: app-debug
+          - build_type: release
+            gradle_task: assembleRelease
+            apk_name: app-release
+      fail-fast: false  # Don't cancel other jobs if one fails
+    
+    name: Build ${{ matrix.build_type }} APK
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    # ... rest of your build steps ...
+    
+    - name: Build ${{ matrix.build_type }} APK
+      run: |
+        cd android
+        ./gradlew ${{ matrix.gradle_task }} --no-daemon --stacktrace
+      
+    - name: Upload ${{ matrix.build_type }} APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.apk_name }}-${{ github.sha }}
+        path: android/app/build/outputs/apk/${{ matrix.build_type }}/*.apk

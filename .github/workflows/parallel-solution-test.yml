@@ -1,0 +1,190 @@
+name: Parallel Solution Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      solutions_to_test:
+        description: 'Solutions to test (comma-separated: a,b,c or all)'
+        required: true
+        default: 'all'
+        type: string
+
+env:
+  REACT_NATIVE_VERSION: 0.73.6
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Set up matrix
+      id: set-matrix
+      run: |
+        if [ "${{ github.event.inputs.solutions_to_test }}" == "all" ]; then
+          echo 'matrix={"solution":["a","b","c","d","e","f","g","h","i","j"]}' >> $GITHUB_OUTPUT
+        else
+          solutions=$(echo "${{ github.event.inputs.solutions_to_test }}" | jq -R -c 'split(",") | map(select(length > 0))')
+          echo "matrix={\"solution\":$solutions}" >> $GITHUB_OUTPUT
+        fi
+
+  test-solution:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+      fail-fast: false
+      max-parallel: 10
+    
+    name: Test Solution ${{ matrix.solution }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: downgrade-to-rn-073
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Accept Android licenses
+      run: |
+        yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        
+    - name: Install Android SDK components
+      run: |
+        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+          "platform-tools" \
+          "platforms;android-34" \
+          "build-tools;34.0.0" \
+          "ndk;26.1.10909125"
+    
+    - name: Apply Solution ${{ matrix.solution }}
+      run: |
+        chmod +x scripts/apply-solution-${{ matrix.solution }}.sh
+        ./scripts/apply-solution-${{ matrix.solution }}.sh
+      continue-on-error: true
+    
+    - name: Install dependencies
+      run: |
+        npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+      continue-on-error: true
+        
+    - name: Create local.properties
+      run: |
+        echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+        
+    - name: Build Android APK
+      id: build
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew clean
+        
+        # Capture build output
+        if ./gradlew assembleDebug --no-daemon --stacktrace --info 2>&1 | tee build-output.log; then
+          echo "build_status=success" >> $GITHUB_OUTPUT
+          echo "✅ Solution ${{ matrix.solution }} SUCCEEDED!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "build_status=failure" >> $GITHUB_OUTPUT
+          echo "❌ Solution ${{ matrix.solution }} FAILED" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract key error from log
+          ERROR=$(grep -E "FAILURE:|error:|Error:" build-output.log | head -5)
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$ERROR" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        fi
+      continue-on-error: true
+    
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: solution-${{ matrix.solution }}-logs
+        path: |
+          android/build-output.log
+          android/app/build/
+        retention-days: 7
+    
+    - name: Upload APK if successful
+      if: steps.build.outputs.build_status == 'success'
+      uses: actions/upload-artifact@v4
+      with:
+        name: solution-${{ matrix.solution }}-apk
+        path: android/app/build/outputs/apk/debug/*.apk
+        retention-days: 30
+    
+    - name: Report solution result
+      if: always()
+      run: |
+        mkdir -p solution-results
+        echo "${{ steps.build.outputs.build_status }}" > solution-results/solution-${{ matrix.solution }}.txt
+        
+    - name: Upload solution result
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: solution-${{ matrix.solution }}-result
+        path: solution-results/
+        retention-days: 7
+
+  summarize:
+    needs: test-solution
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Download all results
+      uses: actions/download-artifact@v4
+      with:
+        pattern: solution-*-result
+        merge-multiple: true
+        
+    - name: Generate summary report
+      run: |
+        echo "# 📊 Parallel Solution Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Solution | Status | Description |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|--------|-------------|" >> $GITHUB_STEP_SUMMARY
+        
+        # Solution descriptions
+        declare -A descriptions
+        descriptions[a]="Gradle Version Fix (8.3)"
+        descriptions[b]="AsyncStorage Stub Module"
+        descriptions[c]="Resolution Strategy Enforcement"
+        descriptions[d]="Clean React Native Template"
+        descriptions[e]="Manual Dependency Resolution"
+        descriptions[f]="Alternative Build System"
+        descriptions[g]="Replace Problematic Dependencies"
+        descriptions[h]="Custom Gradle Plugin"
+        descriptions[i]="Namespace Migration"
+        descriptions[j]="Hybrid Approach"
+        
+        for solution in a b c d e f g h i j; do
+          if [ -f "solution-results/solution-$solution.txt" ]; then
+            status=$(cat solution-results/solution-$solution.txt)
+            if [ "$status" == "success" ]; then
+              echo "| Solution ${solution^^} | ✅ SUCCESS | ${descriptions[$solution]} |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Solution ${solution^^} | ❌ FAILED | ${descriptions[$solution]} |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "| Solution ${solution^^} | ⏭️ SKIPPED | ${descriptions[$solution]} |" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Test completed at:** $(date)" >> $GITHUB_STEP_SUMMARY
