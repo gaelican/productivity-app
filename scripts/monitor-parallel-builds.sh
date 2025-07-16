@@ -88,6 +88,7 @@ solution_names[g]="Remove WatermelonDB"
 solution_names[h]="Custom Plugin"
 solution_names[i]="Namespace Migration"
 solution_names[j]="Hybrid Approach"
+solution_names[k]="Fix Autolinking"
 
 # Status tracking
 declare -A last_status
@@ -102,7 +103,7 @@ while true; do
     success_count=0
     failure_count=0
     
-    for solution in a b c d e f g h i j; do
+    for solution in a b c d e f g h i j k; do
         status=$(get_job_status $solution)
         
         # Status emoji
@@ -163,7 +164,7 @@ while true; do
         # Show successful solutions
         if [ $success_count -gt 0 ]; then
             echo_success "Working solutions:"
-            for solution in a b c d e f g h i j; do
+            for solution in a b c d e f g h i j k; do
                 if [ "${last_status[$solution]}" == "success" ]; then
                     echo "  ✅ Solution ${solution^^}: ${solution_names[$solution]}"
                 fi
@@ -220,7 +221,7 @@ if [ $success_count -gt 0 ]; then
     echo "The following solutions successfully built the APK:" >> parallel-test-report.md
     echo "" >> parallel-test-report.md
     
-    for solution in a b c d e f g h i j; do
+    for solution in a b c d e f g h i j k; do
         if [ "${last_status[$solution]}" == "success" ]; then
             echo "- **Solution ${solution^^}**: ${solution_names[$solution]}" >> parallel-test-report.md
             echo "  - Download APK: \`gh run download $WORKFLOW_ID --repo gaelican/productivity-app -n solution-$solution-apk\`" >> parallel-test-report.md

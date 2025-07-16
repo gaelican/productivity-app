@@ -25,7 +25,7 @@ jobs:
       id: set-matrix
       run: |
         if [ "${{ github.event.inputs.solutions_to_test }}" == "all" ]; then
-          echo 'matrix={"solution":["a","b","c","d","e","f","g","h","i","j"]}' >> $GITHUB_OUTPUT
+          echo 'matrix={"solution":["a","b","c","d","e","f","g","h","i","j","k"]}' >> $GITHUB_OUTPUT
         else
           solutions=$(echo "${{ github.event.inputs.solutions_to_test }}" | jq -R -c 'split(",") | map(select(length > 0))')
           echo "matrix={\"solution\":$solutions}" >> $GITHUB_OUTPUT
